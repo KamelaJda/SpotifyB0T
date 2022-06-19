@@ -30,6 +30,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import se.michaelthelin.spotify.SpotifyApi;
+import me.kamelajda.utils.language.Language;
 
 @Slf4j
 @SpringBootApplication
