@@ -1,0 +1,5 @@
+filters:
+  filter_type: file
+  file_format: properties
+  source_language: pl
+  source_file: src/main/resources/language/messages-pl.properties
