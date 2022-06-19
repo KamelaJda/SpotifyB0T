@@ -19,6 +19,12 @@
 package me.kamelajda.components;
 
 import com.google.common.eventbus.EventBus;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import javax.security.auth.login.LoginException;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.modules.commands.CommandModule;
 import me.kamelajda.services.SpotifyService;
@@ -49,99 +55,103 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import javax.security.auth.login.LoginException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Component
 public class SpotifyB0T {
 
-    private final String token;
-    private final LanguageType defaultLanguage;
-    private final EventBus eventBus;
-    private final SubscribeArtistService subscribeArtistService;
-    private final EventWaiter eventWaiter;
-    private final SpotifyService spotifyService;
-    private final LanguageService languageService;
+  private final String token;
+  private final LanguageType defaultLanguage;
+  private final EventBus eventBus;
+  private final SubscribeArtistService subscribeArtistService;
+  private final EventWaiter eventWaiter;
+  private final SpotifyService spotifyService;
+  private final LanguageService languageService;
 
-    private ShardManager api;
+  private ShardManager api;
 
-    public SpotifyB0T(Environment env, EventBus eventBus, SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter, SpotifyService spotifyService, LanguageService languageService) {
-        this.subscribeArtistService = subscribeArtistService;
-        this.eventBus = eventBus;
-        this.eventWaiter = eventWaiter;
-        this.spotifyService = spotifyService;
-        this.languageService = languageService;
-        this.token = env.getProperty("discord.bot.token");
-        this.defaultLanguage = LanguageType.valueOf(env.getProperty("application.defaultLanguage"));
+  public SpotifyB0T(
+      Environment env,
+      EventBus eventBus,
+      SubscribeArtistService subscribeArtistService,
+      EventWaiter eventWaiter,
+      SpotifyService spotifyService,
+      LanguageService languageService) {
+    this.subscribeArtistService = subscribeArtistService;
+    this.eventBus = eventBus;
+    this.eventWaiter = eventWaiter;
+    this.spotifyService = spotifyService;
+    this.languageService = languageService;
+    this.token = env.getProperty("discord.bot.token");
+    this.defaultLanguage = LanguageType.valueOf(env.getProperty("application.defaultLanguage"));
 
-        start();
+    start();
+  }
+
+  public void start() {
+    Language language = languageService.get(defaultLanguage);
+    Static.defualtLanguage = language;
+
+    log.info(language.get("status.translation.loaded"));
+
+    CommandManager commandManager = new CommandManager();
+    ModuleManager moduleManager = new ModuleManager();
+    CommandExecute commandExecute = new CommandExecute(commandManager);
+
+    JDAHandler eventHandler = new JDAHandler(eventBus);
+
+    try {
+      DefaultShardManagerBuilder builder =
+          DefaultShardManagerBuilder.createDefault(
+              token, GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MEMBERS);
+      builder.addEventListeners(eventHandler, eventWaiter);
+      builder.setShardsTotal(1);
+      builder.setShards(0, 0);
+      builder.setEnableShutdownHook(false);
+      builder.setAutoReconnect(true);
+      builder.setStatus(OnlineStatus.DO_NOT_DISTURB);
+      builder.setActivity(Activity.playing(language.get("status.starting")));
+      builder.setBulkDeleteSplittingEnabled(false);
+      builder.setCallbackPool(Executors.newFixedThreadPool(30));
+      builder.enableCache(CacheFlag.MEMBER_OVERRIDES);
+      MessageAction.setDefaultMentionRepliedUser(false);
+      MessageAction.setDefaultMentions(
+          EnumSet.of(Message.MentionType.EMOTE, Message.MentionType.CHANNEL));
+      this.api = builder.build();
+    } catch (LoginException e) {
+      log.error("Failed to login!", e);
+      System.exit(1);
     }
 
-    public void start() {
-        Language language = languageService.get(defaultLanguage);
-        Static.defualtLanguage = language;
+    List<IModule> modules = new ArrayList<>();
+    modules.add(
+        new CommandModule(
+            commandManager, subscribeArtistService, spotifyService, eventWaiter, eventBus));
 
-        log.info(language.get("status.translation.loaded"));
-
-        CommandManager commandManager = new CommandManager();
-        ModuleManager moduleManager = new ModuleManager();
-        CommandExecute commandExecute = new CommandExecute(commandManager);
-
-        JDAHandler eventHandler = new JDAHandler(eventBus);
-
-        try {
-            DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MEMBERS);
-            builder.addEventListeners(eventHandler, eventWaiter);
-            builder.setShardsTotal(1);
-            builder.setShards(0, 0);
-            builder.setEnableShutdownHook(false);
-            builder.setAutoReconnect(true);
-            builder.setStatus(OnlineStatus.DO_NOT_DISTURB);
-            builder.setActivity(Activity.playing(language.get("status.starting")));
-            builder.setBulkDeleteSplittingEnabled(false);
-            builder.setCallbackPool(Executors.newFixedThreadPool(30));
-            builder.enableCache(CacheFlag.MEMBER_OVERRIDES);
-            MessageAction.setDefaultMentionRepliedUser(false);
-            MessageAction.setDefaultMentions(EnumSet.of(Message.MentionType.EMOTE, Message.MentionType.CHANNEL));
-            this.api = builder.build();
-        } catch (LoginException e) {
-            log.error("Failed to login!", e);
-            System.exit(1);
-        }
-
-        List<IModule> modules = new ArrayList<>();
-        modules.add(new CommandModule(commandManager, subscribeArtistService, spotifyService, eventWaiter, eventBus));
-
-        for (IModule module : modules) {
-            moduleManager.loadModule(module);
-        }
-
-        OptionData optionData = new OptionData(OptionType.STRING, "command", "command", true);
-        for (String s : commandManager.getCommands().keySet()) {
-            optionData.addChoice(s, s);
-        }
-
-        commandManager.getCommands().get("help").getCommandData().addOptions(optionData);
-
-        List<CommandData> data = commandManager.getCommands()
-                .values().stream().map(ICommand::getCommandData)
-                .collect(Collectors.toList());
-
-        for (JDA shard : api.getShards()) {
-            shard.updateCommands().addCommands(data).queue();
-        }
-
-        eventBus.register(commandExecute);
-
-        api.setStatus(OnlineStatus.ONLINE);
-        api.setActivity(Activity.playing(language.get("status.hi")));
-
-        spotifyService.setShardManager(api);
+    for (IModule module : modules) {
+      moduleManager.loadModule(module);
     }
 
+    OptionData optionData = new OptionData(OptionType.STRING, "command", "command", true);
+    for (String s : commandManager.getCommands().keySet()) {
+      optionData.addChoice(s, s);
+    }
+
+    commandManager.getCommands().get("help").getCommandData().addOptions(optionData);
+
+    List<CommandData> data =
+        commandManager.getCommands().values().stream()
+            .map(ICommand::getCommandData)
+            .collect(Collectors.toList());
+
+    for (JDA shard : api.getShards()) {
+      shard.updateCommands().addCommands(data).queue();
+    }
+
+    eventBus.register(commandExecute);
+
+    api.setStatus(OnlineStatus.ONLINE);
+    api.setActivity(Activity.playing(language.get("status.hi")));
+
+    spotifyService.setShardManager(api);
+  }
 }

@@ -18,7 +18,10 @@
 
 package me.kamelajda.services;
 
-import com.google.gson.Gson;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.ArtistInfo;
 import me.kamelajda.jpa.models.UserConfig;
@@ -28,83 +31,87 @@ import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 @Slf4j
 @Service
 public class SubscribeArtistService {
 
-    private final UserConfigService userConfigService;
-    private final ArtistInfoRepository artistInfoRepository;
+  private final UserConfigService userConfigService;
+  private final ArtistInfoRepository artistInfoRepository;
 
-    public SubscribeArtistService(UserConfigService userConfigService, ArtistInfoRepository artistInfoRepository) {
-        this.userConfigService = userConfigService;
-        this.artistInfoRepository = artistInfoRepository;
-    }
+  public SubscribeArtistService(
+      UserConfigService userConfigService, ArtistInfoRepository artistInfoRepository) {
+    this.userConfigService = userConfigService;
+    this.artistInfoRepository = artistInfoRepository;
+  }
 
-    public void addArtists(Long userId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
-        Set<ArtistInfo> artists = new HashSet<>();
+  public void addArtists(
+      Long userId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
+    Set<ArtistInfo> artists = new HashSet<>();
 
-        UserConfig object = userConfigService.load(userId);
+    UserConfig object = userConfigService.load(userId);
 
-        for (String s : artistId) {
-            Artist artist = allValues.stream().filter(f -> f.getId().equals(s)).findFirst().orElse(null);
+    for (String s : artistId) {
+      Artist artist = allValues.stream().filter(f -> f.getId().equals(s)).findFirst().orElse(null);
 
-            if (artist == null) continue;
+      if (artist == null) continue;
 
-            ArtistInfo artistInfo = artistInfoRepository.findBySpotifyId(s).orElseGet(() -> {
-                ArtistInfo.ArtistInfoBuilder builder = ArtistInfo.builder()
-                        .spotifyId(s)
-                        .displayName(artist.getName())
-                        .thumbnailUrl(artist.getImages().length > 0 ? artist.getImages()[0].getUrl() : null)
-                        .link(artist.getExternalUrls().get("spotify"));
+      ArtistInfo artistInfo =
+          artistInfoRepository
+              .findBySpotifyId(s)
+              .orElseGet(
+                  () -> {
+                    ArtistInfo.ArtistInfoBuilder builder =
+                        ArtistInfo.builder()
+                            .spotifyId(s)
+                            .displayName(artist.getName())
+                            .thumbnailUrl(
+                                artist.getImages().length > 0
+                                    ? artist.getImages()[0].getUrl()
+                                    : null)
+                            .link(artist.getExternalUrls().get("spotify"));
 
-                try {
-                    Paging<AlbumSimplified> album = spotifyService.getLastAlbum(s);
+                    try {
+                      Paging<AlbumSimplified> album = spotifyService.getLastAlbum(s);
 
-                    if (album.getItems().length > 0) {
+                      if (album.getItems().length > 0) {
                         AlbumSimplified item = album.getItems()[0];
                         builder.lastAlbumDate(item.getReleaseDate());
                         builder.lastAlbumName(item.getName());
                         builder.lastAlbumLink(item.getExternalUrls().get("spotify"));
+                      }
+
+                    } catch (Exception e) {
+                      log.error("An error occurred while getting a last album", e);
                     }
 
-                } catch (Exception e) {
-                    log.error("An error occurred while getting a last album", e);
-                }
+                    return builder.build();
+                  });
 
-                return builder.build();
-            });
-
-            artistInfo.getSubscribeUsers().add(object);
-            artists.add(artistInfo);
-        }
-
-        artistInfoRepository.saveAll(artists);
+      artistInfo.getSubscribeUsers().add(object);
+      artists.add(artistInfo);
     }
 
-    public void removeArtist(Long userId, String spotifyId) {
-        UserConfig object = userConfigService.load(userId);
+    artistInfoRepository.saveAll(artists);
+  }
 
-        ArtistInfo info = artistInfoRepository.findBySpotifyId(spotifyId).orElseThrow();
-        info.getSubscribeUsers().remove(object);
+  public void removeArtist(Long userId, String spotifyId) {
+    UserConfig object = userConfigService.load(userId);
 
-        artistInfoRepository.save(info);
-    }
+    ArtistInfo info = artistInfoRepository.findBySpotifyId(spotifyId).orElseThrow();
+    info.getSubscribeUsers().remove(object);
 
-    public List<ArtistInfo> getAllArtist(Long userId) {
-        return artistInfoRepository.findAllBySubscribeUsers_UserId(userId);
-    }
+    artistInfoRepository.save(info);
+  }
 
-    public Set<ArtistInfo> getAllArtist(Collection<Long> usersId) {
-        return artistInfoRepository.findAllBySubscribeUsers_UserIdIn(usersId);
-    }
+  public List<ArtistInfo> getAllArtist(Long userId) {
+    return artistInfoRepository.findAllBySubscribeUsers_UserId(userId);
+  }
 
-    public void save(ArtistInfo info) {
-        artistInfoRepository.save(info);
-    }
+  public Set<ArtistInfo> getAllArtist(Collection<Long> usersId) {
+    return artistInfoRepository.findAllBySubscribeUsers_UserIdIn(usersId);
+  }
 
+  public void save(ArtistInfo info) {
+    artistInfoRepository.save(info);
+  }
 }

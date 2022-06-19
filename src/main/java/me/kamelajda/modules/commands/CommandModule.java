@@ -35,26 +35,26 @@ import me.kamelajda.utils.module.IModule;
 @Getter
 public class CommandModule extends IModule {
 
-    private final String name = "commands";
+  private final String name = "commands";
 
-    private final CommandManager commandManager;
-    private final SubscribeArtistService subscribeArtistService;
-    private final SpotifyService spotifyService;
-    private final EventWaiter eventWaiter;
-    private final EventBus eventBus;
+  private final CommandManager commandManager;
+  private final SubscribeArtistService subscribeArtistService;
+  private final SpotifyService spotifyService;
+  private final EventWaiter eventWaiter;
+  private final EventBus eventBus;
 
-    @Override
-    public void startUp() {
-        commandManager.registerCommand(new SubscribeCommand(subscribeArtistService, spotifyService, eventWaiter));
-        commandManager.registerCommand(new HelpCommand(commandManager));
-        commandManager.registerCommand(new ArtistsCommand(subscribeArtistService, eventWaiter));
+  @Override
+  public void startUp() {
+    commandManager.registerCommand(
+        new SubscribeCommand(subscribeArtistService, spotifyService, eventWaiter));
+    commandManager.registerCommand(new HelpCommand(commandManager));
+    commandManager.registerCommand(new ArtistsCommand(subscribeArtistService, eventWaiter));
 
-        registerListener(new ExecuteCommandAsButtonListener(subscribeArtistService, eventWaiter));
-    }
+    registerListener(new ExecuteCommandAsButtonListener(subscribeArtistService, eventWaiter));
+  }
 
-    @Override
-    public void disable() {
-        this.unregisterListeners();
-    }
-
+  @Override
+  public void disable() {
+    this.unregisterListeners();
+  }
 }

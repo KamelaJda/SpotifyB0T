@@ -18,14 +18,12 @@
 
 package me.kamelajda.jpa.models;
 
+import java.util.HashSet;
+import java.util.Set;
+import javax.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
-
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -37,24 +35,23 @@ import java.util.Set;
 @Builder
 public class ArtistInfo {
 
-    @Id @GeneratedValue private Long id;
+  @Id @GeneratedValue private Long id;
 
-    private String spotifyId;
+  private String spotifyId;
 
-    private String displayName;
+  private String displayName;
 
-    private String thumbnailUrl;
+  private String thumbnailUrl;
 
-    private String link;
+  private String link;
 
-    private String lastAlbumName;
-    private String lastAlbumDate;
-    private String lastAlbumLink;
+  private String lastAlbumName;
+  private String lastAlbumDate;
+  private String lastAlbumLink;
 
-    @ManyToMany
-    @ToString.Exclude
-    @LazyCollection(LazyCollectionOption.FALSE)
-    @Builder.Default
-    private Set<UserConfig> subscribeUsers = new HashSet<>();
-
+  @ManyToMany
+  @ToString.Exclude
+  @LazyCollection(LazyCollectionOption.FALSE)
+  @Builder.Default
+  private Set<UserConfig> subscribeUsers = new HashSet<>();
 }

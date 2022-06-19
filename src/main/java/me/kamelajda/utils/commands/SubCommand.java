@@ -27,7 +27,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface SubCommand {
 
-    String name() default "";
-
+  String name() default "";
 }
-

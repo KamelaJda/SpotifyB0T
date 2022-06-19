@@ -18,12 +18,11 @@
 
 package me.kamelajda.jpa.models;
 
-import lombok.*;
-import me.kamelajda.utils.language.LanguageType;
-
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import lombok.*;
+import me.kamelajda.utils.language.LanguageType;
 
 @Getter
 @Setter
@@ -35,9 +34,7 @@ import javax.persistence.Table;
 @Builder
 public class UserConfig {
 
-    @Id private Long userId;
+  @Id private Long userId;
 
-    @Builder.Default
-    private LanguageType languageType = LanguageType.values()[0];
-
+  @Builder.Default private LanguageType languageType = LanguageType.values()[0];
 }
