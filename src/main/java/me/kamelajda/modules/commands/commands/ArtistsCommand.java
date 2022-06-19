@@ -36,58 +36,56 @@ import org.jetbrains.annotations.Nullable;
 
 public class ArtistsCommand extends ICommand {
 
-  private final SubscribeArtistService subscribeArtistService;
-  private final EventWaiter eventWaiter;
+    private final SubscribeArtistService subscribeArtistService;
+    private final EventWaiter eventWaiter;
 
-  public ArtistsCommand(SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter) {
-    this.subscribeArtistService = subscribeArtistService;
-    this.eventWaiter = eventWaiter;
-    name = "artists";
-    category = CommandCategory.BASIC;
-    commandData = getData();
-  }
-
-  @Override
-  protected boolean execute(SlashContext context) {
-    List<ArtistInfo> list = subscribeArtistService.getAllArtist(context.getUser().getIdLong());
-
-    if (list == null || list.isEmpty()) {
-      context.getEvent().deferReply(true).queue();
-      context.sendTranslate("artists.empty");
-      return false;
+    public ArtistsCommand(SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter) {
+        this.subscribeArtistService = subscribeArtistService;
+        this.eventWaiter = eventWaiter;
+        name = "artists";
+        category = CommandCategory.BASIC;
+        commandData = getData();
     }
 
-    context.getEvent().deferReply(false).complete();
-    context.getHook().editOriginal(context.getLanguage().get("global.generic.loading")).queue();
+    @Override
+    protected boolean execute(SlashContext context) {
+        List<ArtistInfo> list = subscribeArtistService.getAllArtist(context.getUser().getIdLong());
 
-    List<EmbedBuilder> pages =
-        list.stream()
-            .map(m -> embed(context.getLanguage(), context.getMember(), m))
-            .collect(Collectors.toList());
+        if (list == null || list.isEmpty()) {
+            context.getEvent().deferReply(true).queue();
+            context.sendTranslate("artists.empty");
+            return false;
+        }
 
-    EmbedPaginator.create(pages, context.getUser(), eventWaiter, context.getHook());
+        context.getEvent().deferReply(false).complete();
+        context.getHook().editOriginal(context.getLanguage().get("global.generic.loading")).queue();
 
-    return true;
-  }
+        List<EmbedBuilder> pages = list.stream()
+                        .map(m -> embed(context.getLanguage(), context.getMember(), m))
+                        .collect(Collectors.toList());
 
-  public static EmbedBuilder embed(
-      Language language, @Nullable Member member, ArtistInfo artistInfo) {
-    EmbedBuilder eb = new EmbedBuilder();
-    eb.setTitle(artistInfo.getDisplayName(), artistInfo.getLink());
-    eb.setImage(artistInfo.getThumbnailUrl());
+        EmbedPaginator.create(pages, context.getUser(), eventWaiter, context.getHook());
 
-    if (artistInfo.getLastAlbumName() != null) {
-      eb.addField(
-          language.get("artists.last.album"),
-          String.format("[%s](%s)", artistInfo.getLastAlbumName(), artistInfo.getLastAlbumLink()),
-          false);
-      eb.addField(
-          language.get("artist.last.album.release.date"), artistInfo.getLastAlbumDate(), false);
+        return true;
     }
 
-    if (member != null) eb.setColor(UserUtil.getColor(member));
-    else eb.setColor(Color.GREEN);
+    public static EmbedBuilder embed(Language language, @Nullable Member member, ArtistInfo artistInfo) {
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.setTitle(artistInfo.getDisplayName(), artistInfo.getLink());
+        eb.setImage(artistInfo.getThumbnailUrl());
 
-    return eb;
-  }
+        if (artistInfo.getLastAlbumName() != null) {
+            eb.addField(
+                    language.get("artists.last.album"),
+                    String.format("[%s](%s)", artistInfo.getLastAlbumName(), artistInfo.getLastAlbumLink()),
+                    false);
+            eb.addField(
+                    language.get("artist.last.album.release.date"), artistInfo.getLastAlbumDate(), false);
+        }
+
+        if (member != null) eb.setColor(UserUtil.getColor(member));
+        else eb.setColor(Color.GREEN);
+
+        return eb;
+    }
 }

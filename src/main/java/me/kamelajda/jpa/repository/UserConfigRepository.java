@@ -25,5 +25,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserConfigRepository extends JpaRepository<UserConfig, Long> {
 
-  List<UserConfig> findAllByLanguageType(LanguageType language);
+    List<UserConfig> findAllByLanguageType(LanguageType language);
+
 }

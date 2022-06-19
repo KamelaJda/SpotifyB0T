@@ -52,139 +52,134 @@ import se.michaelthelin.spotify.model_objects.specification.Paging;
 @Service
 public class SpotifyService {
 
-  private final ScheduledExecutorService accessTokenScheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService accessTokenScheduler = Executors.newScheduledThreadPool(1);
 
-  private final ScheduledExecutorService checkAlbumsCheduler = Executors.newScheduledThreadPool(1);
-  private final ExecutorService executor =
-      Executors.newFixedThreadPool(LanguageType.values().length);
+    private final ScheduledExecutorService checkAlbumsCheduler = Executors.newScheduledThreadPool(1);
+    private final ExecutorService executor = Executors.newFixedThreadPool(LanguageType.values().length);
 
-  private final SpotifyApi api;
-  private final UserConfigService userConfigService;
-  private final SubscribeArtistService subscribeArtistService;
-  private final LanguageService languageService;
+    private final SpotifyApi api;
+    private final UserConfigService userConfigService;
+    private final SubscribeArtistService subscribeArtistService;
+    private final LanguageService languageService;
 
-  @Getter @Setter private ShardManager shardManager;
+    @Getter @Setter private ShardManager shardManager;
 
-  public SpotifyService(
-      SpotifyApi api,
-      UserConfigService userConfigService,
-      SubscribeArtistService subscribeArtistService,
-      LanguageService languageService) {
-    this.api = api;
-    this.userConfigService = userConfigService;
-    this.subscribeArtistService = subscribeArtistService;
-    this.languageService = languageService;
+    public SpotifyService(SpotifyApi api, UserConfigService userConfigService, SubscribeArtistService subscribeArtistService, LanguageService languageService) {
+        this.api = api;
+        this.userConfigService = userConfigService;
+        this.subscribeArtistService = subscribeArtistService;
+        this.languageService = languageService;
 
-    refreshAccessToken();
-    setupNotification();
-  }
-
-  public CompletableFuture<Paging<Artist>> searchArtists(String query) {
-    return api.searchArtists(query).limit(10).build().executeAsync();
-  }
-
-  public Paging<AlbumSimplified> getLastAlbum(String artistId)
-      throws IOException, ParseException, SpotifyWebApiException {
-    return api.getArtistsAlbums(artistId).offset(0).limit(1).build().execute();
-  }
-
-  private void refreshAccessToken() {
-    try {
-      ClientCredentials cr = api.clientCredentials().build().execute();
-      api.setAccessToken(cr.getAccessToken());
-      accessTokenScheduler.schedule(
-          this::refreshAccessToken, cr.getExpiresIn() - 120L, TimeUnit.SECONDS);
-    } catch (Exception e) {
-      accessTokenScheduler.schedule(this::refreshAccessToken, 60, TimeUnit.SECONDS);
+        refreshAccessToken();
+        setupNotification();
     }
-  }
 
-  private long timeToRefresh(LanguageType lang) {
-    ZonedDateTime now = ZonedDateTime.now(lang.getTimeZone());
-    ZonedDateTime nextRun = now.withHour(0).withMinute(10).withSecond(0);
+    public CompletableFuture<Paging<Artist>> searchArtists(String query) {
+        return api.searchArtists(query).limit(10).build().executeAsync();
+    }
 
-    if (now.compareTo(nextRun) > 0) nextRun = nextRun.plusDays(1);
+    public Paging<AlbumSimplified> getLastAlbum(String artistId)
+            throws IOException, ParseException, SpotifyWebApiException {
+        return api.getArtistsAlbums(artistId).offset(0).limit(1).build().execute();
+    }
 
-    return Duration.between(now, nextRun).getSeconds();
-  }
+    private void refreshAccessToken() {
+        try {
+            ClientCredentials cr = api.clientCredentials().build().execute();
+            api.setAccessToken(cr.getAccessToken());
+            accessTokenScheduler.schedule(
+                    this::refreshAccessToken, cr.getExpiresIn() - 120L, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            accessTokenScheduler.schedule(this::refreshAccessToken, 60, TimeUnit.SECONDS);
+        }
+    }
 
-  private void setupNotification() {
-    checkAlbumsCheduler.scheduleAtFixedRate(
-        () -> {
-          List<UserConfig> list = userConfigService.getAll();
+    private long timeToRefresh(LanguageType lang) {
+        ZonedDateTime now = ZonedDateTime.now(lang.getTimeZone());
+        ZonedDateTime nextRun = now.withHour(0).withMinute(10).withSecond(0);
 
-          Set<ArtistInfo> infos =
-              subscribeArtistService.getAllArtist(
-                  list.stream().map(UserConfig::getUserId).collect(Collectors.toSet()));
+        if (now.compareTo(nextRun) > 0) nextRun = nextRun.plusDays(1);
 
-          int index = 0;
-          for (ArtistInfo info : infos) {
-            executor.execute(
+        return Duration.between(now, nextRun).getSeconds();
+    }
+
+    private void setupNotification() {
+        checkAlbumsCheduler.scheduleAtFixedRate(
                 () -> {
-                  try {
-                    AlbumSimplified[] album = getLastAlbum(info.getSpotifyId()).getItems();
-                    if (album.length == 0) return;
+                    List<UserConfig> list = userConfigService.getAll();
 
-                    AlbumSimplified newAlbum = album[0];
+                    Set<ArtistInfo> infos =
+                            subscribeArtistService.getAllArtist(
+                                    list.stream().map(UserConfig::getUserId).collect(Collectors.toSet()));
 
-                    if (newAlbum.getExternalUrls().get("spotify").equals(info.getLastAlbumLink())) {
-                      return;
+                    int index = 0;
+                    for (ArtistInfo info : infos) {
+                        executor.execute(
+                                () -> {
+                                    try {
+                                        AlbumSimplified[] album = getLastAlbum(info.getSpotifyId()).getItems();
+                                        if (album.length == 0) return;
+
+                                        AlbumSimplified newAlbum = album[0];
+
+                                        if (newAlbum.getExternalUrls().get("spotify").equals(info.getLastAlbumLink())) {
+                                            return;
+                                        }
+
+                                        info.setLastAlbumDate(newAlbum.getReleaseDate());
+                                        info.setLastAlbumLink(newAlbum.getExternalUrls().get("spotify"));
+                                        info.setLastAlbumName(newAlbum.getName());
+
+                                        subscribeArtistService.save(info);
+
+                                        for (UserConfig user : info.getSubscribeUsers()) {
+                                            Language l = languageService.get(user.getLanguageType());
+
+                                            EmbedBuilder eb = new EmbedBuilder();
+                                            eb.setColor(Color.BLUE);
+                                            eb.setTitle(l.get("spotify.service.notification.new.album"));
+                                            eb.setDescription(
+                                                    l.get(
+                                                            "spotify.service.notification.description",
+                                                            info.getDisplayName(),
+                                                            info.getLink(),
+                                                            info.getLastAlbumName(),
+                                                            info.getLastAlbumLink()));
+                                            if (newAlbum.getImages().length > 0)
+                                                eb.setImage(newAlbum.getImages()[0].getUrl());
+
+                                            eb.setTimestamp(Instant.now());
+                                            eb.setFooter(
+                                                    "SpotifyB0T",
+                                                    getShardManager()
+                                                            .getShards()
+                                                            .get(0)
+                                                            .getSelfUser()
+                                                            .getEffectiveAvatarUrl());
+
+                                            try {
+                                                User u = getShardManager().retrieveUserById(user.getUserId()).complete();
+                                                PrivateChannel channel = u.openPrivateChannel().complete();
+                                                channel.sendMessageEmbeds(eb.build()).complete();
+                                            } catch (Exception ignored) {
+                                            }
+                                        }
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+
+                        if (++index >= 10) {
+                            try {
+                                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                                index = 0;
+                            } catch (InterruptedException ignored) {
+                            }
+                        }
                     }
-
-                    info.setLastAlbumDate(newAlbum.getReleaseDate());
-                    info.setLastAlbumLink(newAlbum.getExternalUrls().get("spotify"));
-                    info.setLastAlbumName(newAlbum.getName());
-
-                    subscribeArtistService.save(info);
-
-                    for (UserConfig user : info.getSubscribeUsers()) {
-                      Language l = languageService.get(user.getLanguageType());
-
-                      EmbedBuilder eb = new EmbedBuilder();
-                      eb.setColor(Color.BLUE);
-                      eb.setTitle(l.get("spotify.service.notification.new.album"));
-                      eb.setDescription(
-                          l.get(
-                              "spotify.service.notification.description",
-                              info.getDisplayName(),
-                              info.getLink(),
-                              info.getLastAlbumName(),
-                              info.getLastAlbumLink()));
-                      if (newAlbum.getImages().length > 0)
-                        eb.setImage(newAlbum.getImages()[0].getUrl());
-
-                      eb.setTimestamp(Instant.now());
-                      eb.setFooter(
-                          "SpotifyB0T",
-                          getShardManager()
-                              .getShards()
-                              .get(0)
-                              .getSelfUser()
-                              .getEffectiveAvatarUrl());
-
-                      try {
-                        User u = getShardManager().retrieveUserById(user.getUserId()).complete();
-                        PrivateChannel channel = u.openPrivateChannel().complete();
-                        channel.sendMessageEmbeds(eb.build()).complete();
-                      } catch (Exception ignored) {
-                      }
-                    }
-                  } catch (Exception e) {
-                    e.printStackTrace();
-                  }
-                });
-
-            if (++index >= 10) {
-              try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-                index = 0;
-              } catch (InterruptedException ignored) {
-              }
-            }
-          }
-        },
-        timeToRefresh(LanguageType.POLISH),
-        TimeUnit.HOURS.toSeconds(5),
-        TimeUnit.SECONDS);
-  }
+                },
+                timeToRefresh(LanguageType.POLISH),
+                TimeUnit.HOURS.toSeconds(5),
+                TimeUnit.SECONDS);
+    }
 }

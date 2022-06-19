@@ -47,17 +47,14 @@ public class SubscribeCommand extends ICommand {
   private final SpotifyService spotifyService;
   private final EventWaiter eventWaiter;
 
-  public SubscribeCommand(
-      SubscribeArtistService subscribeArtistService,
-      SpotifyService spotifyService,
-      EventWaiter eventWaiter) {
-    this.subscribeArtistService = subscribeArtistService;
-    this.spotifyService = spotifyService;
-    this.eventWaiter = eventWaiter;
+  public SubscribeCommand(SubscribeArtistService subscribeArtistService, SpotifyService spotifyService, EventWaiter eventWaiter) {
+      this.subscribeArtistService = subscribeArtistService;
+      this.spotifyService = spotifyService;
+      this.eventWaiter = eventWaiter;
 
-    name = "subscribe";
-    category = CommandCategory.BASIC;
-    commandData =
+      name = "subscribe";
+      category = CommandCategory.BASIC;
+      commandData =
         getData().addOptions(new OptionData(OptionType.STRING, "artist", "Artist name", true));
   }
 

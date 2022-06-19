@@ -35,23 +35,23 @@ import org.hibernate.annotations.LazyCollectionOption;
 @Builder
 public class ArtistInfo {
 
-  @Id @GeneratedValue private Long id;
+    @Id @GeneratedValue private Long id;
 
-  private String spotifyId;
+    private String spotifyId;
 
-  private String displayName;
+    private String displayName;
 
-  private String thumbnailUrl;
+    private String thumbnailUrl;
 
-  private String link;
+    private String link;
 
-  private String lastAlbumName;
-  private String lastAlbumDate;
-  private String lastAlbumLink;
+    private String lastAlbumName;
+    private String lastAlbumDate;
+    private String lastAlbumLink;
 
-  @ManyToMany
-  @ToString.Exclude
-  @LazyCollection(LazyCollectionOption.FALSE)
-  @Builder.Default
-  private Set<UserConfig> subscribeUsers = new HashSet<>();
+    @ManyToMany
+    @ToString.Exclude
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @Builder.Default
+    private Set<UserConfig> subscribeUsers = new HashSet<>();
 }

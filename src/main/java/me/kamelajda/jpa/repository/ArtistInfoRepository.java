@@ -27,9 +27,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ArtistInfoRepository extends JpaRepository<ArtistInfo, Long> {
 
-  Optional<ArtistInfo> findBySpotifyId(String spotifyId);
+    Optional<ArtistInfo> findBySpotifyId(String spotifyId);
 
-  List<ArtistInfo> findAllBySubscribeUsers_UserId(Long subscribeUsers_userId);
+    List<ArtistInfo> findAllBySubscribeUsers_UserId(Long subscribeUsers_userId);
 
-  Set<ArtistInfo> findAllBySubscribeUsers_UserIdIn(Collection<Long> usersIds);
+    Set<ArtistInfo> findAllBySubscribeUsers_UserIdIn(Collection<Long> usersIds);
 }

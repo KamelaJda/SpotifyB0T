@@ -33,15 +33,15 @@ import org.jetbrains.annotations.NotNull;
 @AllArgsConstructor
 public class JDAHandler implements EventListener {
 
-  private final EventBus eventBus;
+    private final EventBus eventBus;
 
-  @Override
-  public void onEvent(@NotNull GenericEvent event) {
-    if (event instanceof ReadyEvent) {
-      Map<String, SocketHandler> handlers = ((JDAImpl) event.getJDA()).getClient().getHandlers();
-      handlers.put("PRESENCE_UPDATE", new PresenceUpdateHandler((JDAImpl) event.getJDA()));
-    } else if (event instanceof MessageReceivedEvent) {
-      eventBus.post(event);
-    } else eventBus.post(event);
-  }
+    @Override
+    public void onEvent(@NotNull GenericEvent event) {
+        if (event instanceof ReadyEvent) {
+            Map<String, SocketHandler> handlers = ((JDAImpl) event.getJDA()).getClient().getHandlers();
+            handlers.put("PRESENCE_UPDATE", new PresenceUpdateHandler((JDAImpl) event.getJDA()));
+        } else if (event instanceof MessageReceivedEvent) {
+            eventBus.post(event);
+        } else eventBus.post(event);
+    }
 }

@@ -47,6 +47,7 @@ public class MainApplication {
                 .setClientSecret(env.getProperty("spotify.client.secret"))
                 .build();
     }
+
     @Bean
     public EventBus eventBus() {
         return new AsyncEventBus(Executors.newFixedThreadPool(16), EventBusErrorHandler.instance);

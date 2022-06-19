@@ -34,7 +34,7 @@ import me.kamelajda.utils.language.LanguageType;
 @Builder
 public class UserConfig {
 
-  @Id private Long userId;
+    @Id private Long userId;
 
-  @Builder.Default private LanguageType languageType = LanguageType.values()[0];
+    @Builder.Default private LanguageType languageType = LanguageType.values()[0];
 }

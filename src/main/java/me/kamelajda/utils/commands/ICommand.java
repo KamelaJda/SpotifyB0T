@@ -31,27 +31,26 @@ import net.dv8tion.jda.internal.interactions.CommandDataImpl;
 @Slf4j
 public abstract class ICommand {
 
-  protected String name;
-  protected CommandCategory category;
-  protected CommandDataImpl commandData = null;
+    protected String name;
+    protected CommandCategory category;
+    protected CommandDataImpl commandData = null;
 
-  protected final Map<String, Method> subCommands = new HashMap<>();
+    protected final Map<String, Method> subCommands = new HashMap<>();
 
-  public void preExecute(SlashContext context) {
-    execute(context);
-  }
+    public void preExecute(SlashContext context) {
+        execute(context);
+    }
 
-  protected boolean execute(SlashContext context) {
-    throw new UnsupportedOperationException(
-        "Komenda nie ma zaimplementowanej funkcji execute(SlashContext)");
-  }
+    protected boolean execute(SlashContext context) {
+        throw new UnsupportedOperationException("Komenda nie ma zaimplementowanej funkcji execute(SlashContext)");
+    }
 
-  @Override
-  public String toString() {
-    return this.name;
-  }
+    @Override
+    public String toString() {
+        return this.name;
+    }
 
-  protected CommandDataImpl getData() {
-    return new CommandDataImpl(this.name, Static.defualtLanguage.get(this.name + ".description"));
-  }
+    protected CommandDataImpl getData() {
+        return new CommandDataImpl(this.name, Static.defualtLanguage.get(this.name + ".description"));
+    }
 }

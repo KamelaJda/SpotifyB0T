@@ -27,52 +27,52 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CommandManager {
 
-  public final Set<ICommand> registered;
-  public final Map<String, ICommand> commands;
+    public final Set<ICommand> registered;
+    public final Map<String, ICommand> commands;
 
-  public CommandManager() {
-    this.commands = new HashMap<>();
-    this.registered = new HashSet<>();
-  }
-
-  public void registerCommand(ICommand command) {
-    if (command == null) return;
-
-    if (commands.containsKey(command.getName())) {
-      log.error(
-          "Command with name {} ({}) has already registered!",
-          command.getName(),
-          command.getClass().getName());
-      return;
+    public CommandManager() {
+        this.commands = new HashMap<>();
+        this.registered = new HashSet<>();
     }
 
-    if (command.getName() == null || command.getName().isEmpty()) {
-      log.error("Command name {} is empty!", command.getClass().getName());
-      return;
-    }
+    public void registerCommand(ICommand command) {
+        if (command == null) return;
 
-    for (Method method : command.getClass().getMethods()) {
-      try {
-        if (method.isAnnotationPresent(SubCommand.class) && method.getParameterCount() == 1) {
-          SubCommand subCommand = method.getAnnotation(SubCommand.class);
-          String name = subCommand.name().isEmpty() ? method.getName() : subCommand.name();
-          command.getSubCommands().put(name.toLowerCase(), method);
+        if (commands.containsKey(command.getName())) {
+            log.error(
+                    "Command with name {} ({}) has already registered!",
+                    command.getName(),
+                    command.getClass().getName());
+            return;
         }
-      } catch (Exception e) {
-        log.error("An error occurred while logging a subcommand", e);
-        e.printStackTrace();
-      }
+
+        if (command.getName() == null || command.getName().isEmpty()) {
+            log.error("Command name {} is empty!", command.getClass().getName());
+            return;
+        }
+
+        for (Method method : command.getClass().getMethods()) {
+            try {
+                if (method.isAnnotationPresent(SubCommand.class) && method.getParameterCount() == 1) {
+                    SubCommand subCommand = method.getAnnotation(SubCommand.class);
+                    String name = subCommand.name().isEmpty() ? method.getName() : subCommand.name();
+                    command.getSubCommands().put(name.toLowerCase(), method);
+                }
+            } catch (Exception e) {
+                log.error("An error occurred while logging a subcommand", e);
+                e.printStackTrace();
+            }
+        }
+
+        registered.add(command);
+        commands.put(command.getName(), command);
+        log.debug("Command {} has been registered", command.getName());
     }
 
-    registered.add(command);
-    commands.put(command.getName(), command);
-    log.debug("Command {} has been registered", command.getName());
-  }
-
-  public void unregisterCommands(List<ICommand> cmds) {
-    for (ICommand command : cmds) {
-      commands.values().removeIf(cmd -> command == cmd || cmd.getName().equals(command.getName()));
-      registered.removeIf(cmd -> command == cmd || cmd.getName().equals(command.getName()));
+    public void unregisterCommands(List<ICommand> cmds) {
+        for (ICommand command : cmds) {
+            commands.values().removeIf(cmd -> command == cmd || cmd.getName().equals(command.getName()));
+            registered.removeIf(cmd -> command == cmd || cmd.getName().equals(command.getName()));
+        }
     }
-  }
 }
