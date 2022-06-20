@@ -45,13 +45,12 @@ public class UserConfigService {
         return userConfigRepository.findAllByLanguageType(language);
     }
 
-    public void changeLanguage(Long userId, LanguageType language) {
-        UserConfig config = load(userId);
-        config.setLanguageType(language);
-        userConfigRepository.save(config);
-    }
-
     public List<UserConfig> getAll() {
         return userConfigRepository.findAll();
     }
+
+    public void save(UserConfig config) {
+        userConfigRepository.save(config);
+    }
+
 }

@@ -54,8 +54,7 @@ public class SubscribeCommand extends ICommand {
 
       name = "subscribe";
       category = CommandCategory.BASIC;
-      commandData =
-        getData().addOptions(new OptionData(OptionType.STRING, "artist", "Artist name", true));
+      commandData = getData().addOptions(new OptionData(OptionType.STRING, "artist", "Artist name", true));
   }
 
   @Override
@@ -76,7 +75,7 @@ public class SubscribeCommand extends ICommand {
           }
 
           Set<String> subscribeArtist =
-              subscribeArtistService.getAllArtist(context.getUser().getIdLong()).stream()
+              subscribeArtistService.getAllArtist(context.getUserConfig()).stream()
                   .map(ArtistInfo::getSpotifyId)
                   .collect(Collectors.toSet());
 
@@ -121,11 +120,7 @@ public class SubscribeCommand extends ICommand {
 
                 List<SelectOption> options = e.getSelectedOptions();
 
-                subscribeArtistService.addArtists(
-                    context.getUser().getIdLong(),
-                    options.stream().map(SelectOption::getValue).collect(Collectors.toList()),
-                    List.of(req.getItems()),
-                    spotifyService);
+                subscribeArtistService.addArtistsForUser(context.getUser().getIdLong(), options.stream().map(SelectOption::getValue).collect(Collectors.toList()), List.of(req.getItems()), spotifyService);
 
                 context.getHook().editOriginalComponents(Collections.emptyList()).queue();
 

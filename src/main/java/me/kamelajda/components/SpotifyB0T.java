@@ -27,8 +27,10 @@ import java.util.stream.Collectors;
 import javax.security.auth.login.LoginException;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.modules.commands.CommandModule;
+import me.kamelajda.services.GuildConfigService;
 import me.kamelajda.services.SpotifyService;
 import me.kamelajda.services.SubscribeArtistService;
+import me.kamelajda.services.UserConfigService;
 import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Static;
 import me.kamelajda.utils.commands.CommandExecute;
@@ -66,10 +68,12 @@ public class SpotifyB0T {
     private final EventWaiter eventWaiter;
     private final SpotifyService spotifyService;
     private final LanguageService languageService;
+    private final GuildConfigService guildConfigService;
+    private final UserConfigService userConfigService;
 
     private ShardManager api;
 
-    public SpotifyB0T(Environment env, EventBus eventBus, SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter, SpotifyService spotifyService, LanguageService languageService) {
+    public SpotifyB0T(Environment env, EventBus eventBus, SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter, SpotifyService spotifyService, LanguageService languageService, GuildConfigService guildConfigService, UserConfigService userConfigService) {
         this.subscribeArtistService = subscribeArtistService;
         this.eventBus = eventBus;
         this.eventWaiter = eventWaiter;
@@ -77,6 +81,8 @@ public class SpotifyB0T {
         this.languageService = languageService;
         this.token = env.getProperty("discord.bot.token");
         this.defaultLanguage = LanguageType.valueOf(env.getProperty("application.defaultLanguage"));
+        this.guildConfigService = guildConfigService;
+        this.userConfigService = userConfigService;
 
         start();
     }
@@ -89,14 +95,12 @@ public class SpotifyB0T {
 
         CommandManager commandManager = new CommandManager();
         ModuleManager moduleManager = new ModuleManager();
-        CommandExecute commandExecute = new CommandExecute(commandManager);
+        CommandExecute commandExecute = new CommandExecute(commandManager, userConfigService, languageService);
 
         JDAHandler eventHandler = new JDAHandler(eventBus);
 
         try {
-            DefaultShardManagerBuilder builder =
-                    DefaultShardManagerBuilder.createDefault(
-                            token, GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MEMBERS);
+            DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MEMBERS);
             builder.addEventListeners(eventHandler, eventWaiter);
             builder.setShardsTotal(1);
             builder.setShards(0, 0);
@@ -108,8 +112,7 @@ public class SpotifyB0T {
             builder.setCallbackPool(Executors.newFixedThreadPool(30));
             builder.enableCache(CacheFlag.MEMBER_OVERRIDES);
             MessageAction.setDefaultMentionRepliedUser(false);
-            MessageAction.setDefaultMentions(
-                    EnumSet.of(Message.MentionType.EMOTE, Message.MentionType.CHANNEL));
+            MessageAction.setDefaultMentions(EnumSet.of(Message.MentionType.EMOTE, Message.MentionType.CHANNEL));
             this.api = builder.build();
         } catch (LoginException e) {
             log.error("Failed to login!", e);
@@ -118,8 +121,11 @@ public class SpotifyB0T {
 
         List<IModule> modules = new ArrayList<>();
         modules.add(
-                new CommandModule(
-                        commandManager, subscribeArtistService, spotifyService, eventWaiter, eventBus));
+            new CommandModule(
+                commandManager, subscribeArtistService,
+                spotifyService, eventWaiter, eventBus, guildConfigService,
+                userConfigService, languageService
+        ));
 
         for (IModule module : modules) {
             moduleManager.loadModule(module);
@@ -132,10 +138,9 @@ public class SpotifyB0T {
 
         commandManager.getCommands().get("help").getCommandData().addOptions(optionData);
 
-        List<CommandData> data =
-                commandManager.getCommands().values().stream()
-                        .map(ICommand::getCommandData)
-                        .collect(Collectors.toList());
+        List<CommandData> data = commandManager.getCommands().values().stream()
+            .map(ICommand::getCommandData)
+            .collect(Collectors.toList());
 
         for (JDA shard : api.getShards()) {
             shard.updateCommands().addCommands(data).queue();

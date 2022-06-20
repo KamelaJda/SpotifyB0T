@@ -19,12 +19,13 @@
 package me.kamelajda.utils.commands;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.utils.Static;
 import me.kamelajda.utils.enums.CommandCategory;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.internal.interactions.CommandDataImpl;
 
 @Getter
@@ -34,6 +35,8 @@ public abstract class ICommand {
     protected String name;
     protected CommandCategory category;
     protected CommandDataImpl commandData = null;
+    protected boolean onlyInGuild = false;
+    protected Set<Permission> requiredPermissions = new HashSet<>();
 
     protected final Map<String, Method> subCommands = new HashMap<>();
 

@@ -18,10 +18,13 @@
 
 package me.kamelajda.jpa.models;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
@@ -34,6 +37,17 @@ import org.hibernate.annotations.LazyCollectionOption;
 @Table
 @Builder
 public class ArtistInfo {
+
+    public ArtistInfo(Long id, String spotifyId, String displayName, String thumbnailUrl, String link, String lastAlbumName, String lastAlbumDate, String lastAlbumLink) {
+        this.id = id;
+        this.spotifyId = spotifyId;
+        this.displayName = displayName;
+        this.thumbnailUrl = thumbnailUrl;
+        this.link = link;
+        this.lastAlbumName = lastAlbumName;
+        this.lastAlbumDate = lastAlbumDate;
+        this.lastAlbumLink = lastAlbumLink;
+    }
 
     @Id @GeneratedValue private Long id;
 
@@ -49,9 +63,18 @@ public class ArtistInfo {
     private String lastAlbumDate;
     private String lastAlbumLink;
 
-    @ManyToMany
     @ToString.Exclude
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @LazyCollection(value = LazyCollectionOption.EXTRA)
     @Builder.Default
+    @ManyToMany
+    @Fetch(FetchMode.SUBSELECT)
     private Set<UserConfig> subscribeUsers = new HashSet<>();
+
+    @ToString.Exclude
+    @LazyCollection(value = LazyCollectionOption.EXTRA)
+    @Builder.Default
+    @ManyToMany
+    @Fetch(FetchMode.SUBSELECT)
+    private Set<GuildConfig> subscribeGuilds = new HashSet<>();
+
 }

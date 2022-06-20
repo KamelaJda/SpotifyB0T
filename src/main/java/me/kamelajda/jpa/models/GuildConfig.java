@@ -16,11 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package me.kamelajda.utils.enums;
+package me.kamelajda.jpa.models;
 
-public enum CommandCategory {
-    BASIC,
-    CONFIGURE,
-    DEVS,
-    MUSIC
+import lombok.*;
+import me.kamelajda.utils.language.LanguageType;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table
+@Builder
+public class GuildConfig {
+
+    @Id
+    private Long guildId;
+
+    private Long notificationChannelId;
+
+    private LanguageType language;
+
 }

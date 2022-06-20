@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import me.kamelajda.jpa.models.UserConfig;
+import me.kamelajda.services.UserConfigService;
 import me.kamelajda.utils.language.Language;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
@@ -43,6 +45,7 @@ public class SlashContext {
     private final SlashCommandInteractionEvent event;
     private final String prefix;
     private final ICommand cmd;
+    private final UserConfig userConfig;
     private final Language language;
 
     public Member getMember() {
@@ -122,4 +125,9 @@ public class SlashContext {
     public MessageChannel getChannel() {
         return getEvent().getChannel();
     }
+
+    public UserConfig getUserConfig() {
+        return userConfig;
+    }
+
 }

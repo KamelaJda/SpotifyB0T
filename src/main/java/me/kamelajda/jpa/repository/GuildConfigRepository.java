@@ -16,11 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package me.kamelajda.utils.enums;
+package me.kamelajda.jpa.repository;
 
-public enum CommandCategory {
-    BASIC,
-    CONFIGURE,
-    DEVS,
-    MUSIC
+import me.kamelajda.jpa.models.GuildConfig;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface GuildConfigRepository extends JpaRepository<GuildConfig, Long> {
+
+
 }

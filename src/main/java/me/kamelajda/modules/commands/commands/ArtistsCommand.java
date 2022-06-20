@@ -21,6 +21,7 @@ package me.kamelajda.modules.commands.commands;
 import java.awt.*;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import me.kamelajda.jpa.models.ArtistInfo;
 import me.kamelajda.services.SubscribeArtistService;
 import me.kamelajda.utils.EmbedPaginator;
@@ -49,7 +50,7 @@ public class ArtistsCommand extends ICommand {
 
     @Override
     protected boolean execute(SlashContext context) {
-        List<ArtistInfo> list = subscribeArtistService.getAllArtist(context.getUser().getIdLong());
+        List<ArtistInfo> list = subscribeArtistService.getAllArtist(context.getUserConfig());
 
         if (list == null || list.isEmpty()) {
             context.getEvent().deferReply(true).queue();
@@ -61,8 +62,8 @@ public class ArtistsCommand extends ICommand {
         context.getHook().editOriginal(context.getLanguage().get("global.generic.loading")).queue();
 
         List<EmbedBuilder> pages = list.stream()
-                        .map(m -> embed(context.getLanguage(), context.getMember(), m))
-                        .collect(Collectors.toList());
+            .map(m -> embed(context.getLanguage(), context.getMember(), m))
+            .collect(Collectors.toList());
 
         EmbedPaginator.create(pages, context.getUser(), eventWaiter, context.getHook());
 
@@ -75,12 +76,9 @@ public class ArtistsCommand extends ICommand {
         eb.setImage(artistInfo.getThumbnailUrl());
 
         if (artistInfo.getLastAlbumName() != null) {
-            eb.addField(
-                    language.get("artists.last.album"),
-                    String.format("[%s](%s)", artistInfo.getLastAlbumName(), artistInfo.getLastAlbumLink()),
-                    false);
-            eb.addField(
-                    language.get("artist.last.album.release.date"), artistInfo.getLastAlbumDate(), false);
+            eb.addField(language.get("artists.last.album"),
+                String.format("[%s](%s)", artistInfo.getLastAlbumName(), artistInfo.getLastAlbumLink()), false);
+            eb.addField(language.get("artist.last.album.release.date"), artistInfo.getLastAlbumDate(), false);
         }
 
         if (member != null) eb.setColor(UserUtil.getColor(member));

@@ -23,13 +23,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import me.kamelajda.jpa.models.ArtistInfo;
+import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.modules.commands.commands.ArtistsCommand;
 import me.kamelajda.services.SubscribeArtistService;
+import me.kamelajda.services.UserConfigService;
 import me.kamelajda.utils.EmbedPaginator;
 import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Listener;
-import me.kamelajda.utils.Static;
 import me.kamelajda.utils.language.Language;
+import me.kamelajda.utils.language.LanguageService;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 
@@ -38,6 +40,8 @@ public class ExecuteCommandAsButtonListener implements Listener {
 
     private final SubscribeArtistService subscribeArtistService;
     private final EventWaiter eventWaiter;
+    private final UserConfigService userConfigService;
+    private final LanguageService languageService;
 
     @Subscribe
     public void onButtonClick(ButtonInteractionEvent e) {
@@ -45,15 +49,15 @@ public class ExecuteCommandAsButtonListener implements Listener {
 
         String rawCmd = e.getComponentId().split("executecommand-")[1];
 
-        // TODO
-        Language language = Static.defualtLanguage;
+        UserConfig load = userConfigService.load(e.getIdLong());
+        Language language = languageService.get(load.getLanguageType());
 
         if (rawCmd.equals("artists")) {
             e.deferReply(false).queue();
 
             e.reply(language.get("global.generic.loading")).queue();
 
-            List<ArtistInfo> list = subscribeArtistService.getAllArtist(e.getUser().getIdLong());
+            List<ArtistInfo> list = subscribeArtistService.getAllArtist(load);
 
             if (list == null || list.isEmpty()) {
                 e.reply(language.get("artists.empty")).queue();
