@@ -57,6 +57,7 @@ public class CommandManager {
                     SubCommand subCommand = method.getAnnotation(SubCommand.class);
                     String name = subCommand.name().isEmpty() ? method.getName() : subCommand.name();
                     command.getSubCommands().put(name.toLowerCase(), method);
+                    log.info("Subcommand {} has been registered on method: {}", name, method);
                 }
             } catch (Exception e) {
                 log.error("An error occurred while logging a subcommand", e);
@@ -66,7 +67,8 @@ public class CommandManager {
 
         registered.add(command);
         commands.put(command.getName(), command);
-        log.debug("Command {} has been registered", command.getName());
+
+        log.info("Command {} has been registered", command.getName());
     }
 
     public void unregisterCommands(List<ICommand> cmds) {

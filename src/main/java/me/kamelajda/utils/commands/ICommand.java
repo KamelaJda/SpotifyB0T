@@ -18,6 +18,7 @@
 
 package me.kamelajda.utils.commands;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -40,7 +41,14 @@ public abstract class ICommand {
 
     protected final Map<String, Method> subCommands = new HashMap<>();
 
-    public void preExecute(SlashContext context) {
+    public void preExecute(SlashContext context) throws InvocationTargetException, IllegalAccessException {
+        if (context.getEvent().getSubcommandName() != null && getSubCommands().containsKey(context.getEvent().getSubcommandName())) {
+            Method method = getSubCommands().get(context.getEvent().getSubcommandName());
+
+            method.invoke(this, context);
+            return;
+        }
+
         execute(context);
     }
 

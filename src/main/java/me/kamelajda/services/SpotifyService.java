@@ -31,13 +31,13 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.ArtistInfo;
+import me.kamelajda.jpa.models.GuildConfig;
 import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.utils.language.Language;
 import me.kamelajda.utils.language.LanguageService;
 import me.kamelajda.utils.language.LanguageType;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.PrivateChannel;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import org.apache.hc.core5.http.ParseException;
 import org.springframework.stereotype.Service;
@@ -56,6 +56,8 @@ public class SpotifyService {
 
     private final ScheduledExecutorService checkAlbumsScheduler = Executors.newScheduledThreadPool(1);
     private final ExecutorService executor = Executors.newFixedThreadPool(LanguageType.values().length);
+
+    private final ExecutorService sendMessagesExecutor = Executors.newFixedThreadPool(10);
 
     private final SpotifyApi api;
     private final UserConfigService userConfigService;
@@ -129,28 +131,38 @@ public class SpotifyService {
 
                             subscribeArtistService.save(info);
 
-                            for (UserConfig user : info.getSubscribeUsers()) {
-                                Language l = languageService.get(user.getLanguageType());
+                            for (GuildConfig guild : info.getSubscribeGuilds().stream().filter(f -> f.getNotificationChannelId() != null).collect(Collectors.toSet())) {
+                                sendMessagesExecutor.execute(() -> {
+                                    Language l = languageService.get(guild.getLanguage());
 
-                                EmbedBuilder eb = new EmbedBuilder();
-                                eb.setColor(Color.BLUE);
-                                eb.setTitle(l.get("spotify.service.notification.new.album"));
-                                eb.setDescription(l.get("spotify.service.notification.description",
-                                    info.getDisplayName(),
-                                    info.getLink(),
-                                    info.getLastAlbumName(),
-                                    info.getLastAlbumLink()));
-                                if (newAlbum.getImages().length > 0) eb.setImage(newAlbum.getImages()[0].getUrl());
+                                    try {
+                                        Guild guildImpl = shardManager.getGuildById(guild.getGuildId());
+                                        if (guildImpl == null) return;
 
-                                eb.setTimestamp(Instant.now());
-                                eb.setFooter("SpotifyB0T", avatarUrl);
+                                        TextChannel channel = guildImpl.getTextChannelById(guild.getNotificationChannelId());
 
-                                try {
-                                    User u = getShardManager().retrieveUserById(user.getUserId()).complete();
-                                    PrivateChannel channel = u.openPrivateChannel().complete();
-                                    channel.sendMessageEmbeds(eb.build()).complete();
-                                } catch (Exception ignored) { }
+                                        if (channel == null || !channel.canTalk()) {
+                                            User owner = guildImpl.getOwner().getUser();
+                                            owner.openPrivateChannel().complete().sendMessage(l.get("spotify.service.notification.senderror", guildImpl.getName())).queue();
+                                            return;
+                                        }
+
+                                        channel.sendMessageEmbeds(embed(l, info, newAlbum, avatarUrl)).queue();
+                                    } catch (Exception ignored) { }
+                                });
                             }
+
+                            for (UserConfig user : info.getSubscribeUsers()) {
+                                sendMessagesExecutor.execute(() -> {
+                                    Language l = languageService.get(user.getLanguageType());
+                                    try {
+                                        User u = getShardManager().retrieveUserById(user.getUserId()).complete();
+                                        PrivateChannel channel = u.openPrivateChannel().complete();
+                                        channel.sendMessageEmbeds(embed(l, info, newAlbum, avatarUrl)).complete();
+                                    } catch (Exception ignored) { }
+                                });
+                            }
+
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -166,4 +178,23 @@ public class SpotifyService {
             }, timeToRefresh(LanguageType.POLISH), TimeUnit.HOURS.toSeconds(5), TimeUnit.SECONDS
         );
     }
+
+    private MessageEmbed embed(Language l, ArtistInfo info, AlbumSimplified newAlbum, String avatarUrl) {
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.setColor(Color.BLUE);
+        eb.setTitle(l.get("spotify.service.notification.new.album"));
+        eb.setDescription(l.get("spotify.service.notification.description",
+            info.getDisplayName(),
+            info.getLink(),
+            info.getLastAlbumName(),
+            info.getLastAlbumLink()));
+
+        if (newAlbum.getImages().length > 0) eb.setImage(newAlbum.getImages()[0].getUrl());
+
+        eb.setTimestamp(Instant.now());
+        eb.setFooter("SpotifyB0T", avatarUrl);
+
+        return eb.build();
+    }
+
 }

@@ -56,7 +56,7 @@ public class CommandModule extends IModule {
         commandManager.registerCommand(new ConfigureGuildCommand(guildConfigService));
         commandManager.registerCommand(new ConfigureUserCommand(userConfigService));
 
-        registerListener(new ExecuteCommandAsButtonListener(subscribeArtistService, eventWaiter, userConfigService, languageService));
+        registerListener(new ExecuteCommandAsButtonListener(subscribeArtistService, eventWaiter, userConfigService, languageService, guildConfigService));
     }
 
     @Override
