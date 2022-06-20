@@ -55,7 +55,6 @@ public class SubscribeCommand extends ICommand {
         this.subscribeArtistService = subscribeArtistService;
         this.spotifyService = spotifyService;
         this.eventWaiter = eventWaiter;
-
         name = "subscribe";
         category = CommandCategory.BASIC;
         commandData = getData()

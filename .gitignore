@@ -39,3 +39,4 @@ application.properties
 .DS_Store
 
 logs.log
+contributors.json

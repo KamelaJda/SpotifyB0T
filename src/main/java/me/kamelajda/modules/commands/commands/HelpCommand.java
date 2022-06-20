@@ -35,7 +35,6 @@ public class HelpCommand extends ICommand {
 
     public HelpCommand(CommandManager commandManager) {
         this.commandManager = commandManager;
-
         name = "help";
         category = CommandCategory.BASIC;
         commandData = getData();

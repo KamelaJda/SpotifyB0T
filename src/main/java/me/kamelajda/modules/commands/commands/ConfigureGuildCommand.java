@@ -40,7 +40,7 @@ import java.util.Set;
 
 public class ConfigureGuildCommand extends ICommand {
 
-    private static final String FORMAT = "%s **->** %s";
+    private static final String FORMAT = "%s **➔** %s";
 
     private final GuildConfigService guildConfigService;
 

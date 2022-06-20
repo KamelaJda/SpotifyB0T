@@ -103,11 +103,6 @@ public class ArtistsCommand extends ICommand {
     }
 
     public static EmbedBuilder embed(Language language, @Nullable Member member, ArtistInfo artistInfo, SubscribeCommand.SubscribeType type, String name) {
-        System.out.println("Type: " + type);
-        System.out.println("Type: " + type);
-        System.out.println("Type: " + type);
-        System.out.println("Type: " + type);
-
         EmbedBuilder eb = new EmbedBuilder();
         eb.setDescription(language.get("artists.embed.description." + type.name().toLowerCase(), name));
 

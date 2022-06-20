@@ -19,6 +19,7 @@
 package me.kamelajda.components;
 
 import com.google.common.eventbus.EventBus;
+import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.modules.commands.CommandModule;
 import me.kamelajda.services.GuildConfigService;

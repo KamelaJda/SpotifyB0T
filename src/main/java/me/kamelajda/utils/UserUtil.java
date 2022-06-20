@@ -18,11 +18,16 @@
 
 package me.kamelajda.utils;
 
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.sharding.ShardManager;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
+import java.util.HashSet;
 import java.util.Objects;
 
 public class UserUtil {
@@ -33,6 +38,15 @@ public class UserUtil {
             .filter(Objects::nonNull)
             .findAny()
             .orElse(Color.green);
+    }
+
+    public static Color getColor(@Nullable Member member, ShardManager sm) {
+        if (member != null) return getColor(member);
+
+        JDA jda = sm.getShards().get(Static.RANDOM.nextInt(sm.getShards().size()));
+        Guild guild = new HashSet<>(jda.getGuilds()).stream().findAny().orElse(null);
+
+        return guild != null ? getColor(guild.getSelfMember()) : Color.green;
     }
 
     public static String getName(User u) {

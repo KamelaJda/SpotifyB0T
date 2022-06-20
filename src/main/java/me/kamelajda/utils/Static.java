@@ -20,7 +20,11 @@ package me.kamelajda.utils;
 
 import me.kamelajda.utils.language.Language;
 
+import java.util.Random;
+
 public class Static {
+
+    public static final Random RANDOM = new Random();
 
     public static final int MAX_SUBSCRIPTIONS_FOR_USER = 50;
     public static final int MAX_SUBSCRIPTIONS_FOR_GUILD = 50;

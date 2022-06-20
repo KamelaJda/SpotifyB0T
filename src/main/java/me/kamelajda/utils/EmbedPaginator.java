@@ -78,6 +78,10 @@ public class EmbedPaginator {
         start();
     }
 
+    public static EmbedPaginator create(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook hook) {
+        return new EmbedPaginator(pages, user, eventWaiter, hook, 60, null, null);
+    }
+
     private void start() {
         MessageBuilder builder = new MessageBuilder();
         builder.setEmbeds(render(1));
@@ -95,7 +99,7 @@ public class EmbedPaginator {
     private void handle(ButtonInteractionEvent event) {
         event.deferEdit().queue();
 
-        if (customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) {
+        if (customActionRow != null && customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) {
             eventAction.accept(this);
         } else {
             switch (event.getComponentId()) {
@@ -130,7 +134,7 @@ public class EmbedPaginator {
     }
 
     public boolean check(ButtonInteractionEvent event) {
-        if (customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) return true;
+        if (customActionRow != null && customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) return true;
 
         if (event.getMessageId().equals(interaction.retrieveOriginal().complete().getId()) && event.getUser().getIdLong() == userId) {
             switch (event.getComponentId()) {
