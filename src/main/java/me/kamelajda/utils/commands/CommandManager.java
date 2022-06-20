@@ -18,10 +18,11 @@
 
 package me.kamelajda.utils.commands;
 
-import java.lang.reflect.Method;
-import java.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.lang.reflect.Method;
+import java.util.*;
 
 @Getter
 @Slf4j

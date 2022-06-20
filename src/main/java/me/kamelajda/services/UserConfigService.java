@@ -18,11 +18,12 @@
 
 package me.kamelajda.services;
 
-import java.util.List;
 import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.jpa.repository.UserConfigRepository;
 import me.kamelajda.utils.language.LanguageType;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class UserConfigService {

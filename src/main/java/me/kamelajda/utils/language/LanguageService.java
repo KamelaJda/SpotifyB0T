@@ -18,8 +18,10 @@
 
 package me.kamelajda.utils.language;
 
-import java.util.*;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class LanguageService {

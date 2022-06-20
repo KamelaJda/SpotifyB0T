@@ -18,11 +18,12 @@
 
 package me.kamelajda.jpa.models;
 
+import lombok.*;
+import me.kamelajda.utils.language.LanguageType;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import lombok.*;
-import me.kamelajda.utils.language.LanguageType;
 
 @Getter
 @Setter

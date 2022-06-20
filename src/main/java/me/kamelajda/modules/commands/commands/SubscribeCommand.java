@@ -18,11 +18,6 @@
 
 package me.kamelajda.modules.commands.commands;
 
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import me.kamelajda.jpa.models.ArtistInfo;
 import me.kamelajda.services.SpotifyService;
 import me.kamelajda.services.SubscribeArtistService;
@@ -44,6 +39,11 @@ import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class SubscribeCommand extends ICommand {
 

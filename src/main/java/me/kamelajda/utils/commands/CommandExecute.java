@@ -19,11 +19,6 @@
 package me.kamelajda.utils.commands;
 
 import com.google.common.eventbus.Subscribe;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.UserConfig;
@@ -35,6 +30,10 @@ import me.kamelajda.utils.language.LanguageService;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor

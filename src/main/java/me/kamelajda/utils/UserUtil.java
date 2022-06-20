@@ -18,11 +18,12 @@
 
 package me.kamelajda.utils;
 
-import java.awt.*;
-import java.util.Objects;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
+
+import java.awt.*;
+import java.util.Objects;
 
 public class UserUtil {
 

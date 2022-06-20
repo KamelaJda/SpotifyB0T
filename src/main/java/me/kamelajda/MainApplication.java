@@ -20,7 +20,6 @@ package me.kamelajda;
 
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
-import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.utils.EventBusErrorHandler;
 import me.kamelajda.utils.EventWaiter;
@@ -30,7 +29,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import se.michaelthelin.spotify.SpotifyApi;
-import me.kamelajda.utils.language.Language;
+
+import java.util.concurrent.Executors;
 
 @Slf4j
 @SpringBootApplication

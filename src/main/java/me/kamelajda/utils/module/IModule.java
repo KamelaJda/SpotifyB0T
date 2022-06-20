@@ -19,11 +19,12 @@
 package me.kamelajda.utils.module;
 
 import com.google.common.eventbus.EventBus;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import me.kamelajda.utils.Listener;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class IModule {
 

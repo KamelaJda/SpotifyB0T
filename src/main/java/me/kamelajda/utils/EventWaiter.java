@@ -18,6 +18,13 @@
 
 package me.kamelajda.utils;
 
+import net.dv8tion.jda.api.events.Event;
+import net.dv8tion.jda.api.events.GenericEvent;
+import net.dv8tion.jda.api.events.ShutdownEvent;
+import net.dv8tion.jda.api.hooks.EventListener;
+import net.dv8tion.jda.api.hooks.SubscribeEvent;
+import net.dv8tion.jda.internal.utils.Checks;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,12 +35,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.dv8tion.jda.api.events.Event;
-import net.dv8tion.jda.api.events.GenericEvent;
-import net.dv8tion.jda.api.events.ShutdownEvent;
-import net.dv8tion.jda.api.hooks.EventListener;
-import net.dv8tion.jda.api.hooks.SubscribeEvent;
-import net.dv8tion.jda.internal.utils.Checks;
 
 public class EventWaiter implements EventListener {
     private final HashMap<Class<?>, Set<WaitingEvent>> waitingEvents;

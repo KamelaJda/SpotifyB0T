@@ -19,19 +19,19 @@
 package me.kamelajda.utils.commands;
 
 import com.google.errorprone.annotations.CheckReturnValue;
-import java.util.ArrayList;
-import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.kamelajda.jpa.models.GuildConfig;
 import me.kamelajda.jpa.models.UserConfig;
-import me.kamelajda.services.UserConfigService;
 import me.kamelajda.utils.language.Language;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.sharding.ShardManager;
+
+import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 @Getter

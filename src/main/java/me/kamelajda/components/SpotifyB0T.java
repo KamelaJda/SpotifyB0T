@@ -19,12 +19,6 @@
 package me.kamelajda.components;
 
 import com.google.common.eventbus.EventBus;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-import javax.security.auth.login.LoginException;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.modules.commands.CommandModule;
 import me.kamelajda.services.GuildConfigService;
@@ -56,6 +50,13 @@ import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+
+import javax.security.auth.login.LoginException;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
