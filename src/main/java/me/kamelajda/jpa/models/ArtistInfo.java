@@ -18,7 +18,6 @@
 
 package me.kamelajda.jpa.models;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.*;
@@ -67,14 +66,12 @@ public class ArtistInfo {
     @LazyCollection(value = LazyCollectionOption.EXTRA)
     @Builder.Default
     @ManyToMany
-    @Fetch(FetchMode.SUBSELECT)
     private Set<UserConfig> subscribeUsers = new HashSet<>();
 
     @ToString.Exclude
     @LazyCollection(value = LazyCollectionOption.EXTRA)
     @Builder.Default
     @ManyToMany
-    @Fetch(FetchMode.SUBSELECT)
     private Set<GuildConfig> subscribeGuilds = new HashSet<>();
 
 }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import me.kamelajda.jpa.models.GuildConfig;
 import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.services.UserConfigService;
 import me.kamelajda.utils.language.Language;
@@ -37,8 +38,7 @@ import net.dv8tion.jda.api.sharding.ShardManager;
 public class SlashContext {
 
     public static final Pattern URLPATTERN =
-            Pattern.compile(
-                    "(https?://(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\."
+            Pattern.compile("(https?://(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\."
                             + "[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?://(?:www\\.|(?!www))[a-zA-Z0-9]"
                             + "\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]\\.[^\\s]{2,})");
 
@@ -47,6 +47,7 @@ public class SlashContext {
     private final ICommand cmd;
     private final UserConfig userConfig;
     private final Language language;
+    private final GuildConfig guildConfig;
 
     public Member getMember() {
         return event.getMember();
@@ -128,6 +129,10 @@ public class SlashContext {
 
     public UserConfig getUserConfig() {
         return userConfig;
+    }
+
+    public GuildConfig getGuildConfig() {
+        return guildConfig;
     }
 
 }

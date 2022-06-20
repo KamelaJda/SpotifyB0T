@@ -18,17 +18,25 @@
 
 package me.kamelajda.utils;
 
+import lombok.Getter;
+import lombok.Setter;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.Emoji;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.components.ActionComponent;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
-import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
-import net.dv8tion.jda.api.interactions.components.ActionRow;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class EmbedPaginator {
 
@@ -45,27 +53,28 @@ public class EmbedPaginator {
     public static final Button STOP_BUTTON = Button.danger(STOP_ID, Emoji.fromUnicode("\u23F9"));
 
     private final EventWaiter eventWaiter;
-    private final List<EmbedBuilder> pages;
+    @Getter private final List<EmbedBuilder> pages;
     private final long userId;
     private final int second;
-    private final InteractionHook interaction;
+    @Getter private final InteractionHook interaction;
+    private final ActionRow customActionRow;
+    private final Consumer<EmbedPaginator> eventAction;
 
+    @Getter @Setter
     private int thisPage = 1;
 
-    public static EmbedPaginator create(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction, int second) {
-        return new EmbedPaginator(pages, user, eventWaiter, interaction, second);
+    public static EmbedPaginator create(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction, ActionRow customActionRow, Consumer<EmbedPaginator> eventAction) {
+        return new EmbedPaginator(pages, user, eventWaiter, interaction, 60, customActionRow, eventAction);
     }
 
-    public static EmbedPaginator create(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction) {
-        return new EmbedPaginator(pages, user, eventWaiter, interaction, 60);
-    }
-
-    private EmbedPaginator(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction, int second) {
+    private EmbedPaginator(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction, int second, ActionRow customActionRow, Consumer<EmbedPaginator> eventAction) {
         this.eventWaiter = eventWaiter;
         this.pages = pages;
         this.userId = user.getIdLong();
         this.interaction = interaction;
         this.second = second;
+        this.customActionRow = customActionRow;
+        this.eventAction = eventAction;
         start();
     }
 
@@ -74,11 +83,8 @@ public class EmbedPaginator {
         builder.setEmbeds(render(1));
         builder.setActionRows(getActionRow(1));
 
-        interaction
-            .editOriginal(builder.build())
-            .queue(msg -> {
-                if (pages.size() != 1) waitForReaction();
-            });
+        interaction.editOriginal(builder.build())
+            .queue(msg -> waitForReaction());
     }
 
     private void waitForReaction() {
@@ -88,48 +94,59 @@ public class EmbedPaginator {
 
     private void handle(ButtonInteractionEvent event) {
         event.deferEdit().queue();
-        switch (event.getComponentId()) {
-            case FIRST_ID:
-                thisPage = 1;
-                break;
-            case LEFT_ID:
-                if (thisPage > 1) thisPage--;
-                break;
-            case RIGHT_ID:
-                if (thisPage < pages.size()) thisPage++;
-                break;
-            case LAST_ID:
-                thisPage = pages.size();
-                break;
-            case STOP_ID:
-                clear();
-                return;
-            default:
-                break;
+
+        if (customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) {
+            eventAction.accept(this);
+        } else {
+            switch (event.getComponentId()) {
+                case FIRST_ID:
+                    thisPage = 1;
+                    break;
+                case LEFT_ID:
+                    if (thisPage > 1) thisPage--;
+                    break;
+                case RIGHT_ID:
+                    if (thisPage < pages.size()) thisPage++;
+                    break;
+                case LAST_ID:
+                    thisPage = pages.size();
+                    break;
+                case STOP_ID:
+                    clear();
+                    return;
+                default:
+                    break;
+            }
         }
-        interaction.editOriginalEmbeds(render(thisPage)).queue();
-        interaction.editOriginalComponents(getActionRow(thisPage)).queue();
+
+        if (thisPage == -1) return;
+
+        MessageBuilder mb = new MessageBuilder();
+        mb.setEmbeds(render(thisPage));
+        mb.setActionRows(getActionRow(thisPage));
+
+        event.getHook().editOriginal(mb.build()).queue();
         waitForReaction();
     }
 
     public boolean check(ButtonInteractionEvent event) {
-        if (event.getMessageId().equals(interaction.retrieveOriginal().complete().getId())
-                && event.getUser().getIdLong() == userId) {
+        if (customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) return true;
+
+        if (event.getMessageId().equals(interaction.retrieveOriginal().complete().getId()) && event.getUser().getIdLong() == userId) {
             switch (event.getComponentId()) {
                 case FIRST_ID:
                 case LEFT_ID:
                 case RIGHT_ID:
                 case LAST_ID:
-                case STOP_ID:
-                    return true;
-                default:
-                    return false;
+                case STOP_ID: return true;
+                default: return false;
             }
         }
         return false;
     }
 
-    private void clear() {
+    public void clear() {
+        setThisPage(-1);
         interaction.editOriginalComponents(Collections.emptyList()).queue();
     }
 
@@ -139,8 +156,9 @@ public class EmbedPaginator {
         return pageEmbed.build();
     }
 
-    public ActionRow getActionRow(int page) {
-        return getActionRow(page, pages);
+    public List<ActionRow> getActionRow(int page) {
+        if (customActionRow != null) return List.of(getActionRow(page, pages), customActionRow);
+        return List.of(getActionRow(page, pages));
     }
 
     public static ActionRow getActionRow(int page, List<?> pages) {
@@ -152,4 +170,5 @@ public class EmbedPaginator {
         buttons.add(STOP_BUTTON);
         return ActionRow.of(buttons);
     }
+
 }

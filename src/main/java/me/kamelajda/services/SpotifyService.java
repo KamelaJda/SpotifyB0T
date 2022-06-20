@@ -78,8 +78,7 @@ public class SpotifyService {
         return api.searchArtists(query).limit(10).build().executeAsync();
     }
 
-    public Paging<AlbumSimplified> getLastAlbum(String artistId)
-            throws IOException, ParseException, SpotifyWebApiException {
+    public Paging<AlbumSimplified> getLastAlbum(String artistId) throws IOException, ParseException, SpotifyWebApiException {
         return api.getArtistsAlbums(artistId).offset(0).limit(1).build().execute();
     }
 
@@ -87,8 +86,7 @@ public class SpotifyService {
         try {
             ClientCredentials cr = api.clientCredentials().build().execute();
             api.setAccessToken(cr.getAccessToken());
-            accessTokenScheduler.schedule(
-                    this::refreshAccessToken, cr.getExpiresIn() - 120L, TimeUnit.SECONDS);
+            accessTokenScheduler.schedule(this::refreshAccessToken, cr.getExpiresIn() - 120L, TimeUnit.SECONDS);
         } catch (Exception e) {
             accessTokenScheduler.schedule(this::refreshAccessToken, 60, TimeUnit.SECONDS);
         }
@@ -165,6 +163,7 @@ public class SpotifyService {
                         } catch (InterruptedException ignored) { }
                     }
                 }
-            }, timeToRefresh(LanguageType.POLISH), TimeUnit.HOURS.toSeconds(5), TimeUnit.SECONDS);
+            }, timeToRefresh(LanguageType.POLISH), TimeUnit.HOURS.toSeconds(5), TimeUnit.SECONDS
+        );
     }
 }

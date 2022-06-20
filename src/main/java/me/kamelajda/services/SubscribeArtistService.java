@@ -30,10 +30,7 @@ import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -96,7 +93,7 @@ public class SubscribeArtistService {
             });
 
             if (userObject != null) artistInfo.getSubscribeUsers().add(userObject);
-            if (guildObject != null) artistInfo.getSubscribeUsers().add(userObject);
+            if (guildObject != null) artistInfo.getSubscribeGuilds().add(guildObject);
 
             artists.add(artistInfo);
         }
@@ -115,8 +112,27 @@ public class SubscribeArtistService {
     }
 
     @Transactional
+    public void removeArtistForGuild(Long guildId, String spotifyId) {
+        GuildConfig object = guildConfigService.load(guildId);
+
+        ArtistInfo info = artistInfoRepository.findBySpotifyId(spotifyId).orElseThrow();
+        info.getSubscribeGuilds().remove(object);
+
+        artistInfoRepository.save(info);
+    }
+
+    @Transactional
     public List<ArtistInfo> getAllArtist(UserConfig userConfig) {
-        return artistInfoRepository.findAllBySubscribeUsers_UserId(userConfig);
+        List<ArtistInfo> all = artistInfoRepository.findAllBySubscribeUsers_UserId(userConfig);
+        Collections.reverse(all);
+        return all;
+    }
+
+    @Transactional
+    public List<ArtistInfo> getAllArtist(GuildConfig guildConfig) {
+        List<ArtistInfo> all = artistInfoRepository.findAllBySubscribeGuilds(guildConfig);
+        Collections.reverse(all);
+        return all;
     }
 
     @Transactional

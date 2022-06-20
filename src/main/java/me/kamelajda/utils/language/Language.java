@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.MissingFormatArgumentException;
 import java.util.Properties;
 
 import lombok.Getter;
@@ -71,6 +72,10 @@ public class Language {
     public String get(String key, Object... toReplace) {
         ArrayList<String> parsedArray = new ArrayList<>();
         for (Object k : toReplace) parsedArray.add(k.toString());
-        return String.format(get(key), parsedArray.toArray());
+        try {
+            return String.format(get(key), parsedArray.toArray());
+        } catch (MissingFormatArgumentException e) {
+            return get(key);
+        }
     }
 }

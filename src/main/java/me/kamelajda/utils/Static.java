@@ -21,5 +21,9 @@ package me.kamelajda.utils;
 import me.kamelajda.utils.language.Language;
 
 public class Static {
+
+    public static final int MAX_SUBSCRIPTIONS_FOR_USER = 50;
+    public static final int MAX_SUBSCRIPTIONS_FOR_GUILD = 50;
+
     public static Language defualtLanguage = null;
 }

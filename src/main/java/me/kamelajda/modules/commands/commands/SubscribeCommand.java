@@ -27,11 +27,15 @@ import me.kamelajda.jpa.models.ArtistInfo;
 import me.kamelajda.services.SpotifyService;
 import me.kamelajda.services.SubscribeArtistService;
 import me.kamelajda.utils.EventWaiter;
+import me.kamelajda.utils.Static;
 import me.kamelajda.utils.commands.ICommand;
 import me.kamelajda.utils.commands.SlashContext;
 import me.kamelajda.utils.enums.CommandCategory;
 import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.interaction.component.SelectMenuInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
@@ -43,107 +47,137 @@ import se.michaelthelin.spotify.model_objects.specification.Paging;
 
 public class SubscribeCommand extends ICommand {
 
-  private final SubscribeArtistService subscribeArtistService;
-  private final SpotifyService spotifyService;
-  private final EventWaiter eventWaiter;
+    private final SubscribeArtistService subscribeArtistService;
+    private final SpotifyService spotifyService;
+    private final EventWaiter eventWaiter;
 
-  public SubscribeCommand(SubscribeArtistService subscribeArtistService, SpotifyService spotifyService, EventWaiter eventWaiter) {
-      this.subscribeArtistService = subscribeArtistService;
-      this.spotifyService = spotifyService;
-      this.eventWaiter = eventWaiter;
+    public SubscribeCommand(SubscribeArtistService subscribeArtistService, SpotifyService spotifyService, EventWaiter eventWaiter) {
+        this.subscribeArtistService = subscribeArtistService;
+        this.spotifyService = spotifyService;
+        this.eventWaiter = eventWaiter;
 
-      name = "subscribe";
-      category = CommandCategory.BASIC;
-      commandData = getData().addOptions(new OptionData(OptionType.STRING, "artist", "Artist name", true));
-  }
+        name = "subscribe";
+        category = CommandCategory.BASIC;
+        commandData = getData()
+            .addOptions(new OptionData(OptionType.STRING, "artist", "Artist name", true))
+            .addOptions(
+                new OptionData(OptionType.STRING, "type", "Should the subscription be server or private?")
+                    .addChoice("Private (default value)", SubscribeType.PRIVATE.name())
+                    .addChoice("For server", SubscribeType.SERVER.name())
+                    .setRequired(false)
+            );
+    }
 
-  @Override
-  protected boolean execute(SlashContext context) {
-    context.getEvent().deferReply(true).queue();
-    String artist = Objects.requireNonNull(context.getEvent().getOption("artist")).getAsString();
+    @Override
+    protected boolean execute(SlashContext context) {
+        context.getEvent().deferReply(true).queue();
+        String artist = Objects.requireNonNull(context.getEvent().getOption("artist")).getAsString();
 
-    context.sendTranslate("subscribe.search.start");
+        SubscribeType type = SubscribeType.valueOf(context.getEvent().getOption("type", SubscribeType.PRIVATE::name, OptionMapping::getAsString));
 
-    CompletableFuture<Paging<Artist>> future = spotifyService.searchArtists(artist);
+        if (type == SubscribeType.SERVER && !context.getMember().hasPermission(Permission.MANAGE_SERVER)) {
+            context.sendTranslate("global.command.not.permissions", Permission.MANAGE_SERVER.getName());
+            return false;
+        }
 
-    future.whenComplete(
-        (req, th) -> {
-          if (th != null) {
-            context.sendTranslate("subscribe.artists.error");
-            th.printStackTrace();
-            return;
-          }
+        if (type == SubscribeType.SERVER && !context.getEvent().isFromGuild()) {
+            context.sendTranslate("subscribe.only.in.guild", Permission.MANAGE_SERVER.name());
+            return false;
+        }
 
-          Set<String> subscribeArtist =
-              subscribeArtistService.getAllArtist(context.getUserConfig()).stream()
-                  .map(ArtistInfo::getSpotifyId)
-                  .collect(Collectors.toSet());
+        context.sendTranslate("subscribe.search.start");
 
-          List<Artist> items = Arrays.asList(req.getItems());
+        CompletableFuture<Paging<Artist>> future = spotifyService.searchArtists(artist);
 
-          if (items.isEmpty()) {
-            context.sendTranslate("subscribe.artists.not.found");
-            return;
-          }
+        future.whenComplete((req, th) -> {
+            if (th != null) {
+                context.sendTranslate("subscribe.artists.error");
+                th.printStackTrace();
+                return;
+            }
 
-          String componentId = context.getUser().getId() + "-choose-artists";
+            List<ArtistInfo> infos = type == SubscribeType.SERVER ? subscribeArtistService.getAllArtist(context.getGuildConfig()) : subscribeArtistService.getAllArtist(context.getUserConfig());
+            Set<String> subscribeArtist = infos.stream().map(ArtistInfo::getSpotifyId).collect(Collectors.toSet());
 
-          SelectMenu.Builder builder =
-              SelectMenu.create(componentId)
-                  .setPlaceholder(context.getLanguage().get("subscribe.artists.choose"));
-          builder.setMinValues(1).setMaxValues(items.size());
+            List<Artist> items = Arrays.asList(req.getItems());
 
-          for (Artist s : items) {
-            if (subscribeArtist.contains(s.getId())) continue;
+            if (items.isEmpty()) {
+                context.sendTranslate("subscribe.artists.not.found");
+                return;
+            }
 
-            if (s.getName().length() > 100)
-              builder.addOption(s.getName().substring(0, 100), s.getId());
-            else builder.addOption(s.getName(), s.getId());
-          }
+            String componentId = context.getUser().getId() + "-choose-artists";
 
-          if (builder.getOptions().isEmpty()) {
-            context.sendTranslate("subscribe.all.already.subscribed");
-            return;
-          }
+            SelectMenu.Builder builder = SelectMenu.create(componentId).setPlaceholder(context.getLanguage().get("subscribe.artists.choose"));
+            builder.setMinValues(1).setMaxValues(items.size());
 
-          context
-              .getHook()
-              .editOriginal(context.getLanguage().get("subscribe.choose.artists"))
-              .setActionRow(builder.build())
-              .queue();
+            for (Artist s : items) {
+                if (subscribeArtist.contains(s.getId())) continue;
 
-          eventWaiter.waitForEvent(
-              SelectMenuInteractionEvent.class,
-              e -> e.getComponentId().equals(componentId),
-              e -> {
-                e.deferEdit().queue();
+                if (s.getName().length() > 100) builder.addOption(s.getName().substring(0, 100), s.getId());
+                else builder.addOption(s.getName(), s.getId());
+            }
 
-                List<SelectOption> options = e.getSelectedOptions();
+            if (builder.getOptions().isEmpty()) {
+                context.sendTranslate("subscribe.all.already.subscribed");
+                return;
+            }
 
-                subscribeArtistService.addArtistsForUser(context.getUser().getIdLong(), options.stream().map(SelectOption::getValue).collect(Collectors.toList()), List.of(req.getItems()), spotifyService);
+            context.getHook().editOriginal(context.getLanguage().get("subscribe.choose.artists")).setActionRow(builder.build()).queue();
 
-                context.getHook().editOriginalComponents(Collections.emptyList()).queue();
+            eventWaiter.waitForEvent(SelectMenuInteractionEvent.class,
+                e -> e.getComponentId().equals(componentId),
+                e -> {
+                    e.deferEdit().queue();
 
-                MessageBuilder messageBuilder =
-                    new MessageBuilder(
-                        context.getLanguage().get("subscribe.success.subscribed", options.size()));
-                messageBuilder.setActionRows(
-                    ActionRow.of(
-                        Button.success(
-                            "executecommand-artists", "Wyświetl subskrybowanych artystów")));
+                    List<SelectOption> options = e.getSelectedOptions();
 
-                context.getHook().editOriginal(messageBuilder.build()).queue();
+                    if (subscribeArtist.size() + options.size() >= Static.MAX_SUBSCRIPTIONS_FOR_USER) {
+                        context.getHook().editOriginal(context.getLanguage().get("subscribe.error.limit", Static.MAX_SUBSCRIPTIONS_FOR_USER)).queue();
+                        return;
+                    }
+
+                    switch (type) {
+                        case PRIVATE:
+                            subscribeArtistService.addArtistsForUser(context.getUser().getIdLong(), options.stream().map(SelectOption::getValue).collect(Collectors.toList()), List.of(req.getItems()), spotifyService);
+                            break;
+                        case SERVER:
+                            subscribeArtistService.addArtistsForGuild(context.getGuild().getIdLong(), options.stream().map(SelectOption::getValue).collect(Collectors.toList()), List.of(req.getItems()), spotifyService);
+                            break;
+                        default: break;
+                    }
+
+                    context.getHook().editOriginalComponents(Collections.emptyList()).queue();
+
+                    String notificationChannel = context.getLanguage().get("configureguild.value.not.set");
+
+                    if (context.getGuildConfig() != null && context.getGuildConfig().getNotificationChannelId() != null) {
+                        TextChannel id = context.getGuild().getTextChannelById(context.getGuildConfig().getNotificationChannelId());
+                        if (id != null) notificationChannel = id.getAsMention();
+                    }
+
+                    MessageBuilder messageBuilder = new MessageBuilder(context.getLanguage().get("subscribe.success.subscribed." + type.name().toLowerCase(), options.size(), notificationChannel));
+
+                    if (type == SubscribeType.SERVER && context.getGuildConfig().getNotificationChannelId() == null) {
+                        messageBuilder.append("\n\n").append(context.getLanguage().get("subscribe.tip"));
+                    }
+
+                    messageBuilder.setActionRows(ActionRow.of(Button.success("executecommand-artists-" + type.name().toLowerCase(), context.getLanguage().get("subscribe.button.label"))));
+
+                    context.getHook().editOriginal(messageBuilder.build()).queue();
               },
               30,
-              TimeUnit.SECONDS,
-              () ->
-                  context
-                      .getHook()
-                      .editOriginal(context.getLanguage().get("global.timeout"))
-                      .setActionRow(Collections.emptyList())
-                      .queue());
+                TimeUnit.SECONDS,
+                () -> context.getHook()
+                  .editOriginal(context.getLanguage().get("global.timeout"))
+                  .setActionRow(Collections.emptyList()).queue());
         });
 
-    return true;
-  }
+        return true;
+    }
+
+    public enum SubscribeType {
+        PRIVATE, SERVER
+    }
+
 }

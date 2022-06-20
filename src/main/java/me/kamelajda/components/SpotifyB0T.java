@@ -95,7 +95,7 @@ public class SpotifyB0T {
 
         CommandManager commandManager = new CommandManager();
         ModuleManager moduleManager = new ModuleManager();
-        CommandExecute commandExecute = new CommandExecute(commandManager, userConfigService, languageService);
+        CommandExecute commandExecute = new CommandExecute(commandManager, userConfigService, languageService, guildConfigService);
 
         JDAHandler eventHandler = new JDAHandler(eventBus);
 
