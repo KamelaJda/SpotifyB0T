@@ -21,14 +21,19 @@ package me.kamelajda.utils.commands;
 import com.google.common.eventbus.Subscribe;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.modules.commands.commands.HelpCommand;
-import me.kamelajda.utils.Static;
+import me.kamelajda.services.GuildConfigService;
+import me.kamelajda.services.UserConfigService;
 import me.kamelajda.utils.UsageException;
+import me.kamelajda.utils.language.LanguageService;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -36,6 +41,9 @@ public class CommandExecute {
 
     private final CommandManager commandManager;
     private final ExecutorService executor = Executors.newFixedThreadPool(8);
+    private final UserConfigService userConfigService;
+    private final LanguageService languageService;
+    private final GuildConfigService guildConfigService;
 
     @Subscribe
     public void onSlashCommand(SlashCommandInteractionEvent e) {
@@ -45,21 +53,36 @@ public class CommandExecute {
             Thread.currentThread().setName(e.getUser().getId() + "-" + e.getName() + "-" + channelId);
             ICommand c = commandManager.commands.get(e.getName());
             if (c != null && c.getCommandData() != null) {
-                SlashContext context = new SlashContext(e, "/", c, Static.defualtLanguage);
+                UserConfig userConfig = userConfigService.load(e.getUser().getIdLong());
+                SlashContext context = new SlashContext(e, "/", c, userConfig,
+                    languageService.get(userConfig.getLanguageType()),
+                    e.isFromGuild() ? guildConfigService.load(e.getGuild().getIdLong()) : null);
+
+                if (c.isOnlyInGuild() && !e.isFromGuild()) {
+                    e.deferReply(true).queue();
+                    e.getHook().sendMessage(context.getLanguage().get("global.command.only.enabled.in.guild")).queue();
+                    return;
+                }
+
+                if (!c.getRequiredPermissions().isEmpty() && e.getMember() != null && !e.getMember().getPermissions().containsAll(c.getRequiredPermissions())) {
+                    e.deferReply(true).queue();
+                    e.getHook().sendMessage(context.getLanguage().get("global.command.not.permissions", c.getRequiredPermissions().stream().map(Permission::getName).collect(Collectors.joining(", ")))).queue();
+                    return;
+                }
 
                 try {
                     c.preExecute(context);
                 } catch (UsageException ex) {
-                    EmbedBuilder embed = e.isFromGuild() ? HelpCommand.embed(c, e.getMember(), Static.defualtLanguage) : HelpCommand.embed(c, Static.defualtLanguage);
+                    EmbedBuilder embed = e.isFromGuild() ? HelpCommand.embed(c, e.getMember(), context.getLanguage()) : HelpCommand.embed(c, context.getLanguage());
                     context.getHook().sendMessageEmbeds(embed.build()).complete();
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    context.getHook().sendMessage(Static.defualtLanguage.get("global.command.error")).complete();
+                    context.getHook().sendMessage(context.getLanguage().get("global.command.error")).complete();
                 }
+
             }
         };
 
         executor.execute(run);
     }
-
 }

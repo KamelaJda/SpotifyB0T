@@ -44,5 +44,4 @@ public class ModuleManager {
             log.error("An error occurred while enabling module: " + module.getName(), e);
         }
     }
-
 }

@@ -30,8 +30,7 @@ public abstract class IModule {
 
     private final Set<Listener> listeners = new HashSet<>();
 
-    @Getter @Setter
-    private boolean enabled;
+    @Getter @Setter private boolean enabled;
 
     protected abstract String getName();
 
@@ -56,5 +55,4 @@ public abstract class IModule {
         }
         listeners.clear();
     }
-
 }

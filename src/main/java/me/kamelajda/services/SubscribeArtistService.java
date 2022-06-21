@@ -18,37 +18,51 @@
 
 package me.kamelajda.services;
 
-import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.ArtistInfo;
+import me.kamelajda.jpa.models.GuildConfig;
 import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.jpa.repository.ArtistInfoRepository;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Service
+@Transactional
 public class SubscribeArtistService {
 
     private final UserConfigService userConfigService;
     private final ArtistInfoRepository artistInfoRepository;
+    private final GuildConfigService guildConfigService;
 
-    public SubscribeArtistService(UserConfigService userConfigService, ArtistInfoRepository artistInfoRepository) {
+    public SubscribeArtistService(UserConfigService userConfigService, ArtistInfoRepository artistInfoRepository, GuildConfigService guildConfigService) {
         this.userConfigService = userConfigService;
         this.artistInfoRepository = artistInfoRepository;
+        this.guildConfigService = guildConfigService;
     }
 
-    public void addArtists(Long userId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
+    @Transactional
+    public void addArtistsForUser(Long userId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
+        addArtists(userId, null, artistId, allValues, spotifyService);
+    }
+
+    @Transactional
+    public void addArtistsForGuild(Long guildId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
+        addArtists(null, guildId, artistId, allValues, spotifyService);
+    }
+
+    @Transactional
+    public void addArtists(@Nullable Long userId, @Nullable Long guildId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
         Set<ArtistInfo> artists = new HashSet<>();
 
-        UserConfig object = userConfigService.load(userId);
+        UserConfig userObject = userId != null ? userConfigService.load(userId) : null;
+        GuildConfig guildObject = guildId != null ? guildConfigService.load(guildId) : null;
 
         for (String s : artistId) {
             Artist artist = allValues.stream().filter(f -> f.getId().equals(s)).findFirst().orElse(null);
@@ -56,9 +70,8 @@ public class SubscribeArtistService {
             if (artist == null) continue;
 
             ArtistInfo artistInfo = artistInfoRepository.findBySpotifyId(s).orElseGet(() -> {
-                ArtistInfo.ArtistInfoBuilder builder = ArtistInfo.builder()
-                        .spotifyId(s)
-                        .displayName(artist.getName())
+                ArtistInfo.ArtistInfoBuilder builder =
+                    ArtistInfo.builder().spotifyId(s).displayName(artist.getName())
                         .thumbnailUrl(artist.getImages().length > 0 ? artist.getImages()[0].getUrl() : null)
                         .link(artist.getExternalUrls().get("spotify"));
 
@@ -79,13 +92,16 @@ public class SubscribeArtistService {
                 return builder.build();
             });
 
-            artistInfo.getSubscribeUsers().add(object);
+            if (userObject != null) artistInfo.getSubscribeUsers().add(userObject);
+            if (guildObject != null) artistInfo.getSubscribeGuilds().add(guildObject);
+
             artists.add(artistInfo);
         }
 
         artistInfoRepository.saveAll(artists);
     }
 
+    @Transactional
     public void removeArtist(Long userId, String spotifyId) {
         UserConfig object = userConfigService.load(userId);
 
@@ -95,10 +111,31 @@ public class SubscribeArtistService {
         artistInfoRepository.save(info);
     }
 
-    public List<ArtistInfo> getAllArtist(Long userId) {
-        return artistInfoRepository.findAllBySubscribeUsers_UserId(userId);
+    @Transactional
+    public void removeArtistForGuild(Long guildId, String spotifyId) {
+        GuildConfig object = guildConfigService.load(guildId);
+
+        ArtistInfo info = artistInfoRepository.findBySpotifyId(spotifyId).orElseThrow();
+        info.getSubscribeGuilds().remove(object);
+
+        artistInfoRepository.save(info);
     }
 
+    @Transactional
+    public List<ArtistInfo> getAllArtist(UserConfig userConfig) {
+        List<ArtistInfo> all = artistInfoRepository.findAllBySubscribeUsers_UserId(userConfig);
+        Collections.reverse(all);
+        return all;
+    }
+
+    @Transactional
+    public List<ArtistInfo> getAllArtist(GuildConfig guildConfig) {
+        List<ArtistInfo> all = artistInfoRepository.findAllBySubscribeGuilds(guildConfig);
+        Collections.reverse(all);
+        return all;
+    }
+
+    @Transactional
     public Set<ArtistInfo> getAllArtist(Collection<Long> usersId) {
         return artistInfoRepository.findAllBySubscribeUsers_UserIdIn(usersId);
     }
@@ -106,5 +143,4 @@ public class SubscribeArtistService {
     public void save(ArtistInfo info) {
         artistInfoRepository.save(info);
     }
-
 }

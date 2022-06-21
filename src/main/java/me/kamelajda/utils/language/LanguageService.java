@@ -20,7 +20,8 @@ package me.kamelajda.utils.language;
 
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class LanguageService {
@@ -38,5 +39,4 @@ public class LanguageService {
     public Language get(LanguageType lang) {
         return languages.getOrDefault(lang, languages.values().stream().findAny().orElseThrow());
     }
-
 }

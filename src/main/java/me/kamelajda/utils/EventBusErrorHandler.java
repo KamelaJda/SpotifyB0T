@@ -38,11 +38,13 @@ public class EventBusErrorHandler implements SubscriberExceptionHandler {
     private static String message(SubscriberExceptionContext context) {
         Method method = context.getSubscriberMethod();
         return "Exception thrown by subscriber method "
-                + method.getName()
-                + '(' + method.getParameterTypes()[0].getName() + ')'
-                + " on subscriber "
-                + context.getSubscriber()
-                + " when dispatching event: "
-                + context.getEvent();
+            + method.getName()
+            + '('
+            + method.getParameterTypes()[0].getName()
+            + ')'
+            + " on subscriber "
+            + context.getSubscriber()
+            + " when dispatching event: "
+            + context.getEvent();
     }
 }

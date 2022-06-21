@@ -18,5 +18,4 @@
 
 package me.kamelajda.utils;
 
-public interface Listener {
-}
+public interface Listener {}

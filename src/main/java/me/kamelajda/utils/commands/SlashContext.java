@@ -21,6 +21,8 @@ package me.kamelajda.utils.commands;
 import com.google.errorprone.annotations.CheckReturnValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import me.kamelajda.jpa.models.GuildConfig;
+import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.utils.language.Language;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
@@ -35,14 +37,17 @@ import java.util.regex.Pattern;
 @Getter
 public class SlashContext {
 
-    public static final Pattern URLPATTERN = Pattern.compile("(https?://(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\." +
-            "[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?://(?:www\\.|(?!www))[a-zA-Z0-9]" +
-            "\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]\\.[^\\s]{2,})");
+    public static final Pattern URLPATTERN =
+            Pattern.compile("(https?://(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\."
+                            + "[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?://(?:www\\.|(?!www))[a-zA-Z0-9]"
+                            + "\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]\\.[^\\s]{2,})");
 
     private final SlashCommandInteractionEvent event;
     private final String prefix;
     private final ICommand cmd;
+    private final UserConfig userConfig;
     private final Language language;
+    private final GuildConfig guildConfig;
 
     public Member getMember() {
         return event.getMember();
@@ -72,7 +77,7 @@ public class SlashContext {
         for (Object arg : args) {
             parsedArgi.add(arg.toString());
         }
-        return language.get(key, parsedArgi.toArray(new String[]{}));
+        return language.get(key, parsedArgi.toArray(new String[] {}));
     }
 
     public JDA getJDA() {
@@ -104,7 +109,10 @@ public class SlashContext {
         if (checkUrl && URLPATTERN.matcher(msg).matches()) {
             message = message.replaceAll(String.valueOf(URLPATTERN), "[LINK]");
         }
-        return getEvent().getHook().sendMessage(message.replaceAll("@(everyone|here)", "@\u200b$1")).complete();
+        return getEvent()
+                .getHook()
+                .sendMessage(message.replaceAll("@(everyone|here)", "@\u200b$1"))
+                .complete();
     }
 
     public Message send(MessageEmbed message) {
@@ -117,6 +125,14 @@ public class SlashContext {
 
     public MessageChannel getChannel() {
         return getEvent().getChannel();
+    }
+
+    public UserConfig getUserConfig() {
+        return userConfig;
+    }
+
+    public GuildConfig getGuildConfig() {
+        return guildConfig;
     }
 
 }

@@ -2,10 +2,11 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '2.6.6'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 group 'me.kamelajda'
-version '1.0'
+version '1.0.0'
 
 repositories {
     mavenCentral()
@@ -30,6 +31,31 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
+}
+
+build.dependsOn jar
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+
+artifacts {
+    archives shadowJar
+}
+
+shadowJar {
+    manifest {
+        attributes 'Implementation-Title': 'SpotifyB0T', 'Implementation-Version': '1.0.0'
+        attributes 'Main-Class': 'me.kamelajda.MainApplication'
+    }
+    mergeServiceFiles()
+    mergeGroovyExtensionModules()
+
+    mergeServiceFiles()
+    append 'META-INF/spring.handlers'
+    append 'META-INF/spring.schemas'
+    append 'META-INF/spring.tooling'
+    append 'META-INF/spring.factories'
 }
 
 configurations {

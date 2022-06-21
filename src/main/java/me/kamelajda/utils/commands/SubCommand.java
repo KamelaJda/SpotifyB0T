@@ -30,4 +30,3 @@ public @interface SubCommand {
     String name() default "";
 
 }
-

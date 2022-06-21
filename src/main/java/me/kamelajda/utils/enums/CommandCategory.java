@@ -19,5 +19,8 @@
 package me.kamelajda.utils.enums;
 
 public enum CommandCategory {
-    BASIC, DEVS, MUSIC
+    BASIC,
+    CONFIGURE,
+    DEVS,
+    MUSIC
 }

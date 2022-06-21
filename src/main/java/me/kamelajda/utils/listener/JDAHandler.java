@@ -45,5 +45,4 @@ public class JDAHandler implements EventListener {
             eventBus.post(event);
         } else eventBus.post(event);
     }
-
 }

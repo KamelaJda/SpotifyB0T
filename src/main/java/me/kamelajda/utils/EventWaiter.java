@@ -36,19 +36,16 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class EventWaiter implements EventListener
-{
+public class EventWaiter implements EventListener {
     private final HashMap<Class<?>, Set<WaitingEvent>> waitingEvents;
     private final ScheduledExecutorService threadpool;
     private final boolean shutdownAutomatically;
 
-    public EventWaiter()
-    {
+    public EventWaiter() {
         this(Executors.newSingleThreadScheduledExecutor(), true);
     }
 
-    public EventWaiter(ScheduledExecutorService threadpool, boolean shutdownAutomatically)
-    {
+    public EventWaiter(ScheduledExecutorService threadpool, boolean shutdownAutomatically) {
         Checks.notNull(threadpool, "ScheduledExecutorService");
         Checks.check(!threadpool.isShutdown(), "Cannot construct EventWaiter with a closed ScheduledExecutorService!");
 
@@ -58,17 +55,26 @@ public class EventWaiter implements EventListener
         this.shutdownAutomatically = shutdownAutomatically;
     }
 
-    public boolean isShutdown()
-    {
+    public boolean isShutdown() {
         return threadpool.isShutdown();
     }
 
-    public <T extends Event> void waitForEvent(Class<T> classType, Predicate<T> condition, Consumer<T> action) {
+    public <T extends Event> void waitForEvent(
+        Class<T> classType, Predicate<T> condition, Consumer<T> action) {
         waitForEvent(classType, condition, action, -1, null, null);
     }
 
-    public <T extends Event> void waitForEvent(Class<T> classType, Predicate<T> condition, Consumer<T> action, long timeout, TimeUnit unit, Runnable timeoutAction) {
-        Checks.check(!isShutdown(), "Attempted to register a WaitingEvent while the EventWaiter's threadpool was already shut down!");
+    public <T extends Event> void waitForEvent(
+        Class<T> classType,
+        Predicate<T> condition,
+        Consumer<T> action,
+        long timeout,
+        TimeUnit unit,
+        Runnable timeoutAction) {
+        Checks.check(
+            !isShutdown(),
+            "Attempted to register a WaitingEvent while the EventWaiter's threadpool was already shut"
+                + " down!");
         Checks.notNull(classType, "The provided class type");
         Checks.notNull(condition, "The provided condition predicate");
         Checks.notNull(action, "The provided action consumer");
@@ -77,10 +83,13 @@ public class EventWaiter implements EventListener
         Set<WaitingEvent> set = waitingEvents.computeIfAbsent(classType, c -> new HashSet<>());
         set.add(we);
 
-        if(timeout > 0 && unit != null) {
-            threadpool.schedule(() -> {
-                if(set.remove(we) && timeoutAction != null) timeoutAction.run();
-            }, timeout, unit);
+        if (timeout > 0 && unit != null) {
+            threadpool.schedule(
+                () -> {
+                    if (set.remove(we) && timeoutAction != null) timeoutAction.run();
+                },
+                timeout,
+                unit);
         }
     }
 
@@ -90,11 +99,12 @@ public class EventWaiter implements EventListener
     public final void onEvent(GenericEvent event) {
         Class c = event.getClass();
         while (c != null) {
-            if(waitingEvents.containsKey(c)) {
+            if (waitingEvents.containsKey(c)) {
                 Set<WaitingEvent> set = waitingEvents.get(c);
                 WaitingEvent[] toRemove = set.toArray(new WaitingEvent[set.size()]);
 
-                set.removeAll(Stream.of(toRemove).filter(i -> i.attempt(event)).collect(Collectors.toSet()));
+                set.removeAll(
+                    Stream.of(toRemove).filter(i -> i.attempt(event)).collect(Collectors.toSet()));
             }
             if (event instanceof ShutdownEvent && shutdownAutomatically) {
                 threadpool.shutdown();
@@ -104,7 +114,9 @@ public class EventWaiter implements EventListener
     }
 
     public void shutdown() {
-        if (shutdownAutomatically) throw new UnsupportedOperationException("Shutting down EventWaiters that are set to automatically close is unsupported!");
+        if (shutdownAutomatically)
+            throw new UnsupportedOperationException(
+                "Shutting down EventWaiters that are set to automatically close is unsupported!");
 
         threadpool.shutdown();
     }

@@ -35,7 +35,6 @@ public class HelpCommand extends ICommand {
 
     public HelpCommand(CommandManager commandManager) {
         this.commandManager = commandManager;
-
         name = "help";
         category = CommandCategory.BASIC;
         commandData = getData();
@@ -66,8 +65,14 @@ public class HelpCommand extends ICommand {
 
         eb.setTitle(String.format(language.get("help.command"), "/", cmd.getName()));
 
-        eb.addField(language.get("help.command.description"), language.get(cmd.getName() + ".description"), false);
-        eb.addField(language.get("help.command.category"), language.get("category." + cmd.getCategory().name().toLowerCase()), false);
+        eb.addField(
+                language.get("help.command.description"),
+                language.get(cmd.getName() + ".description"),
+                false);
+        eb.addField(
+                language.get("help.command.category"),
+                language.get("category." + cmd.getCategory().name().toLowerCase()),
+                false);
 
         String key = cmd.getName() + ".extra.help";
         String dodatkowaPomoc = language.get(key);
@@ -80,5 +85,4 @@ public class HelpCommand extends ICommand {
 
         return eb;
     }
-
 }

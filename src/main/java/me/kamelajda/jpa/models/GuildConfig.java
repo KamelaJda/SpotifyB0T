@@ -29,13 +29,17 @@ import javax.persistence.Table;
 @Setter
 @ToString
 @RequiredArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table
-@AllArgsConstructor
 @Builder
-public class UserConfig {
+public class GuildConfig {
 
-    @Id private Long userId;
+    @Id
+    private Long guildId;
 
-    @Builder.Default private LanguageType languageType = LanguageType.values()[0];
+    private Long notificationChannelId;
+
+    private LanguageType language;
+
 }

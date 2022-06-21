@@ -16,26 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package me.kamelajda.jpa.models;
+package me.kamelajda.jpa.repository;
 
-import lombok.*;
-import me.kamelajda.utils.language.LanguageType;
+import me.kamelajda.jpa.models.GuildConfig;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+public interface GuildConfigRepository extends JpaRepository<GuildConfig, Long> {
 
-@Getter
-@Setter
-@ToString
-@RequiredArgsConstructor
-@Entity
-@Table
-@AllArgsConstructor
-@Builder
-public class UserConfig {
 
-    @Id private Long userId;
-
-    @Builder.Default private LanguageType languageType = LanguageType.values()[0];
 }

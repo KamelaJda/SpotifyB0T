@@ -22,11 +22,15 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.utils.Static;
 import me.kamelajda.utils.enums.CommandCategory;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.internal.interactions.CommandDataImpl;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Getter
 @Slf4j
@@ -35,10 +39,19 @@ public abstract class ICommand {
     protected String name;
     protected CommandCategory category;
     protected CommandDataImpl commandData = null;
+    protected boolean onlyInGuild = false;
+    protected Set<Permission> requiredPermissions = new HashSet<>();
 
     protected final Map<String, Method> subCommands = new HashMap<>();
 
-    public void preExecute(SlashContext context) {
+    public void preExecute(SlashContext context) throws InvocationTargetException, IllegalAccessException {
+        if (context.getEvent().getSubcommandName() != null && getSubCommands().containsKey(context.getEvent().getSubcommandName())) {
+            Method method = getSubCommands().get(context.getEvent().getSubcommandName());
+
+            method.invoke(this, context);
+            return;
+        }
+
         execute(context);
     }
 
@@ -54,5 +67,4 @@ public abstract class ICommand {
     protected CommandDataImpl getData() {
         return new CommandDataImpl(this.name, Static.defualtLanguage.get(this.name + ".description"));
     }
-
 }

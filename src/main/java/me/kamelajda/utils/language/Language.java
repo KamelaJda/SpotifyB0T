@@ -18,6 +18,7 @@
 
 package me.kamelajda.utils.language;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,12 +27,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.MissingFormatArgumentException;
 import java.util.Properties;
 
 @Slf4j
 @RequiredArgsConstructor
 public class Language {
 
+    @Getter
     private final LanguageType languageType;
 
     private Properties property = null;
@@ -39,7 +42,10 @@ public class Language {
     public void loadMessages() {
         Properties p = new Properties();
 
-        InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("language/messages-" + languageType.getShortName() + ".properties");
+        InputStream stream =
+                Thread.currentThread()
+                        .getContextClassLoader()
+                        .getResourceAsStream("language/messages-" + languageType.getShortName() + ".properties");
 
         if (stream == null) {
             log.error("Cannot load language " + languageType + "!");
@@ -66,7 +72,10 @@ public class Language {
     public String get(String key, Object... toReplace) {
         ArrayList<String> parsedArray = new ArrayList<>();
         for (Object k : toReplace) parsedArray.add(k.toString());
-        return String.format(get(key), parsedArray.toArray());
+        try {
+            return String.format(get(key), parsedArray.toArray());
+        } catch (MissingFormatArgumentException e) {
+            return get(key);
+        }
     }
-
 }

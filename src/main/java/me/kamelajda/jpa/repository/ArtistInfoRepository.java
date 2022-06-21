@@ -19,7 +19,10 @@
 package me.kamelajda.jpa.repository;
 
 import me.kamelajda.jpa.models.ArtistInfo;
+import me.kamelajda.jpa.models.GuildConfig;
+import me.kamelajda.jpa.models.UserConfig;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
@@ -30,8 +33,19 @@ public interface ArtistInfoRepository extends JpaRepository<ArtistInfo, Long> {
 
     Optional<ArtistInfo> findBySpotifyId(String spotifyId);
 
-    List<ArtistInfo> findAllBySubscribeUsers_UserId(Long subscribeUsers_userId);
+    @Query(
+        " SELECT new ArtistInfo(l.id, l.spotifyId, l.displayName, l.thumbnailUrl, l.link, l.lastAlbumName, l.lastAlbumDate, l.lastAlbumLink) " +
+        " FROM ArtistInfo l" +
+        " WHERE :userConfig MEMBER l.subscribeUsers"
+    )
+    List<ArtistInfo> findAllBySubscribeUsers_UserId(UserConfig userConfig);
+
+    @Query(
+        " SELECT new ArtistInfo(l.id, l.spotifyId, l.displayName, l.thumbnailUrl, l.link, l.lastAlbumName, l.lastAlbumDate, l.lastAlbumLink) " +
+            " FROM ArtistInfo l" +
+            " WHERE :guildConfig MEMBER l.subscribeGuilds"
+    )
+    List<ArtistInfo> findAllBySubscribeGuilds(GuildConfig guildConfig);
 
     Set<ArtistInfo> findAllBySubscribeUsers_UserIdIn(Collection<Long> usersIds);
-
 }
