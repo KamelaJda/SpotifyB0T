@@ -131,8 +131,8 @@ public class SubscribeCommand extends ICommand {
 
                     List<SelectOption> options = e.getSelectedOptions();
 
-                    if (subscribeArtist.size() + options.size() >= Static.MAX_SUBSCRIPTIONS_FOR_USER) {
-                        context.getHook().editOriginal(context.getLanguage().get("subscribe.error.limit", Static.MAX_SUBSCRIPTIONS_FOR_USER)).queue();
+                    if (subscribeArtist.size() + options.size() >= Static.MAX_SUBSCRIPTIONS) {
+                        context.getHook().editOriginal(context.getLanguage().get("subscribe.error.limit", Static.MAX_SUBSCRIPTIONS)).queue();
                         return;
                     }
 

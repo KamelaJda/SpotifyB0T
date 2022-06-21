@@ -18,16 +18,32 @@
 
 package me.kamelajda.utils;
 
+import me.kamelajda.MainApplication;
 import me.kamelajda.utils.language.Language;
 
+import java.util.Date;
+import java.util.Optional;
 import java.util.Random;
 
 public class Static {
 
     public static final Random RANDOM = new Random();
-
-    public static final int MAX_SUBSCRIPTIONS_FOR_USER = 50;
-    public static final int MAX_SUBSCRIPTIONS_FOR_GUILD = 50;
+    public static final int MAX_SUBSCRIPTIONS = 50;
+    public static final String VERSION;
+    public static final Date START_DATE;
 
     public static Language defualtLanguage = null;
+
+    static {
+        START_DATE = new Date();
+
+        String v = "?.?.?";
+
+        try {
+            v = Optional.of(MainApplication.class.getPackage().getImplementationVersion()).orElse("?.?.?");
+        } catch (Exception ignored) { }
+
+        VERSION = v;
+    }
+
 }

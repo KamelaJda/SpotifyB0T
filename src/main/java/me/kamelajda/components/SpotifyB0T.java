@@ -18,14 +18,12 @@
 
 package me.kamelajda.components;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.EventBus;
-import com.google.gson.Gson;
+import com.google.common.util.concurrent.ServiceManager;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.modules.commands.CommandModule;
-import me.kamelajda.services.GuildConfigService;
-import me.kamelajda.services.SpotifyService;
-import me.kamelajda.services.SubscribeArtistService;
-import me.kamelajda.services.UserConfigService;
+import me.kamelajda.services.*;
 import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Static;
 import me.kamelajda.utils.commands.CommandExecute;
@@ -56,6 +54,7 @@ import javax.security.auth.login.LoginException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -72,10 +71,12 @@ public class SpotifyB0T {
     private final LanguageService languageService;
     private final GuildConfigService guildConfigService;
     private final UserConfigService userConfigService;
+    private final Environment env;
 
     private ShardManager api;
 
     public SpotifyB0T(Environment env, EventBus eventBus, SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter, SpotifyService spotifyService, LanguageService languageService, GuildConfigService guildConfigService, UserConfigService userConfigService) {
+        this.env = env;
         this.subscribeArtistService = subscribeArtistService;
         this.eventBus = eventBus;
         this.eventWaiter = eventWaiter;
@@ -98,14 +99,13 @@ public class SpotifyB0T {
         CommandManager commandManager = new CommandManager();
         ModuleManager moduleManager = new ModuleManager();
         CommandExecute commandExecute = new CommandExecute(commandManager, userConfigService, languageService, guildConfigService);
-
         JDAHandler eventHandler = new JDAHandler(eventBus);
 
         try {
             DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MEMBERS);
             builder.addEventListeners(eventHandler, eventWaiter);
-            builder.setShardsTotal(1);
-            builder.setShards(0, 0);
+            builder.setShardsTotal(Objects.requireNonNull(env.getProperty("jda.shards.total", Integer.class)));
+            builder.setShards(Objects.requireNonNull(env.getProperty("jda.shards.min", Integer.class)), Objects.requireNonNull(env.getProperty("jda.shards.max", Integer.class)));
             builder.setEnableShutdownHook(false);
             builder.setAutoReconnect(true);
             builder.setStatus(OnlineStatus.DO_NOT_DISTURB);
@@ -121,13 +121,16 @@ public class SpotifyB0T {
             System.exit(1);
         }
 
+        ServiceManager serviceManager = new ServiceManager(ImmutableList.of(new StatusService(api, env)));
+
         List<IModule> modules = new ArrayList<>();
         modules.add(
             new CommandModule(
                 commandManager, subscribeArtistService,
                 spotifyService, eventWaiter, eventBus, guildConfigService,
                 userConfigService, languageService
-        ));
+            )
+        );
 
         for (IModule module : modules) {
             moduleManager.loadModule(module);
@@ -154,5 +157,6 @@ public class SpotifyB0T {
         api.setActivity(Activity.playing(language.get("status.hi")));
 
         spotifyService.setShardManager(api);
+        serviceManager.startAsync();
     }
 }
