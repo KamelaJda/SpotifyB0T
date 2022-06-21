@@ -23,6 +23,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ServiceManager;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.modules.commands.CommandModule;
+import me.kamelajda.modules.logs.LogsModule;
 import me.kamelajda.services.*;
 import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Static;
@@ -98,7 +99,7 @@ public class SpotifyB0T {
 
         CommandManager commandManager = new CommandManager();
         ModuleManager moduleManager = new ModuleManager();
-        CommandExecute commandExecute = new CommandExecute(commandManager, userConfigService, languageService, guildConfigService);
+        CommandExecute commandExecute = new CommandExecute(commandManager, userConfigService, languageService, guildConfigService, eventBus);
         JDAHandler eventHandler = new JDAHandler(eventBus);
 
         try {
@@ -131,6 +132,8 @@ public class SpotifyB0T {
                 userConfigService, languageService
             )
         );
+
+        modules.add(new LogsModule(eventBus, env));
 
         for (IModule module : modules) {
             moduleManager.loadModule(module);

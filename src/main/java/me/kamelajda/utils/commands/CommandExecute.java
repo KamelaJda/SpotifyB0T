@@ -18,6 +18,7 @@
 
 package me.kamelajda.utils.commands;
 
+import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import me.kamelajda.modules.commands.commands.HelpCommand;
 import me.kamelajda.services.GuildConfigService;
 import me.kamelajda.services.UserConfigService;
 import me.kamelajda.utils.UsageException;
+import me.kamelajda.utils.events.CommandExecuteEvent;
 import me.kamelajda.utils.language.LanguageService;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -44,6 +46,7 @@ public class CommandExecute {
     private final UserConfigService userConfigService;
     private final LanguageService languageService;
     private final GuildConfigService guildConfigService;
+    private final EventBus eventBus;
 
     @Subscribe
     public void onSlashCommand(SlashCommandInteractionEvent e) {
@@ -71,6 +74,7 @@ public class CommandExecute {
                 }
 
                 try {
+                    eventBus.post(new CommandExecuteEvent(context));
                     c.preExecute(context);
                 } catch (UsageException ex) {
                     EmbedBuilder embed = e.isFromGuild() ? HelpCommand.embed(c, e.getMember(), context.getLanguage()) : HelpCommand.embed(c, context.getLanguage());
