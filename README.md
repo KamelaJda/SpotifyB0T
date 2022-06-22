@@ -13,6 +13,12 @@
 
 ## Notifications about new albums, songs and feats of your favorite artists!
 
+### Bot Features
+- (see top)
+- Multi-language support for server and user
+- Possible configuration on server
+- Artist subscriptions for servers and users
+
 ### Useful links
 - [Add bot to your server](https://discord.com/oauth2/authorize?client_id=968882980720373840&permissions=414464724032&scope=bot+applications.commands)
 - [Report a bug](https://github.com/KamelaJda/SpotifyB0T/issues/new?assignees=KamelaJda&labels=bug&template=bug_report.md&title=%5BBUG%5D)
