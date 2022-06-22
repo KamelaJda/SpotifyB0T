@@ -19,45 +19,47 @@
 package me.kamelajda.services;
 
 import lombok.extern.slf4j.Slf4j;
+import me.kamelajda.jpa.models.ArtistCreation;
 import me.kamelajda.jpa.models.ArtistInfo;
 import me.kamelajda.jpa.models.GuildConfig;
 import me.kamelajda.jpa.models.UserConfig;
+import me.kamelajda.jpa.repository.ArtistCreationRepository;
 import me.kamelajda.jpa.repository.ArtistInfoRepository;
+import me.kamelajda.utils.enums.CreationType;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
-import se.michaelthelin.spotify.model_objects.specification.Paging;
 
 import java.util.*;
 
 @Slf4j
 @Service
-@Transactional
 public class SubscribeArtistService {
 
     private final UserConfigService userConfigService;
     private final ArtistInfoRepository artistInfoRepository;
     private final GuildConfigService guildConfigService;
+    private final ArtistCreationRepository artistCreationRepository;
 
-    public SubscribeArtistService(UserConfigService userConfigService, ArtistInfoRepository artistInfoRepository, GuildConfigService guildConfigService) {
+    public SubscribeArtistService(UserConfigService userConfigService, ArtistInfoRepository artistInfoRepository, GuildConfigService guildConfigService, ArtistCreationRepository artistCreationRepository) {
         this.userConfigService = userConfigService;
         this.artistInfoRepository = artistInfoRepository;
         this.guildConfigService = guildConfigService;
+        this.artistCreationRepository = artistCreationRepository;
     }
 
-    @Transactional
+    
     public void addArtistsForUser(Long userId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
         addArtists(userId, null, artistId, allValues, spotifyService);
     }
 
-    @Transactional
+    
     public void addArtistsForGuild(Long guildId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
         addArtists(null, guildId, artistId, allValues, spotifyService);
     }
 
-    @Transactional
+    
     public void addArtists(@Nullable Long userId, @Nullable Long guildId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
         Set<ArtistInfo> artists = new HashSet<>();
 
@@ -76,17 +78,34 @@ public class SubscribeArtistService {
                         .link(artist.getExternalUrls().get("spotify"));
 
                 try {
-                    Paging<AlbumSimplified> album = spotifyService.getLastAlbum(s);
+                    AlbumSimplified album = spotifyService.getLastAlbum(s);
 
-                    if (album.getItems().length > 0) {
-                        AlbumSimplified item = album.getItems()[0];
-                        builder.lastAlbumDate(item.getReleaseDate());
-                        builder.lastAlbumName(item.getName());
-                        builder.lastAlbumLink(item.getExternalUrls().get("spotify"));
+                    if (album != null) {
+                        ArtistCreation lastAlbum = artistCreationRepository.save(createCreation(CreationType.ALBUM, album));
+                        builder.lastAlbum(lastAlbum);
                     }
-
                 } catch (Exception e) {
                     log.error("An error occurred while getting a last album", e);
+                }
+
+                try {
+                    AlbumSimplified tracks = spotifyService.getLastTrack(artist.getId());
+                    if (tracks != null) {
+                        ArtistCreation lastTrack = artistCreationRepository.save(createCreation(CreationType.TRACK, tracks));
+                        builder.lastTrack(lastTrack);
+                    }
+                } catch (Exception e) {
+                    log.error("An error occurred while getting a last track", e);
+                }
+
+                try {
+                    AlbumSimplified lastFeat = spotifyService.getLastFeat(artist.getId());
+                    if (lastFeat != null) {
+                        ArtistCreation lastTrack = artistCreationRepository.save(createCreation(CreationType.FEAT, lastFeat));
+                        builder.lastFeat(lastTrack);
+                    }
+                } catch (Exception e) {
+                    log.error("An error occurred while getting a last feat", e);
                 }
 
                 return builder.build();
@@ -101,43 +120,49 @@ public class SubscribeArtistService {
         artistInfoRepository.saveAll(artists);
     }
 
-    @Transactional
+    public static ArtistCreation createCreation(CreationType type, AlbumSimplified item) {
+        return ArtistCreation.builder()
+            .creationType(type)
+            .date(item.getReleaseDate())
+            .name(item.getName())
+            .link(item.getExternalUrls().get("spotify"))
+            .build();
+    }
+
     public void removeArtist(Long userId, String spotifyId) {
-        UserConfig object = userConfigService.load(userId);
-
         ArtistInfo info = artistInfoRepository.findBySpotifyId(spotifyId).orElseThrow();
-        info.getSubscribeUsers().remove(object);
+
+        info.getSubscribeUsers().removeIf(o -> o.getUserId().equals(userId));
 
         artistInfoRepository.save(info);
     }
 
-    @Transactional
     public void removeArtistForGuild(Long guildId, String spotifyId) {
-        GuildConfig object = guildConfigService.load(guildId);
-
         ArtistInfo info = artistInfoRepository.findBySpotifyId(spotifyId).orElseThrow();
-        info.getSubscribeGuilds().remove(object);
+
+        info.getSubscribeGuilds().removeIf(o -> o.getGuildId().equals(guildId));
 
         artistInfoRepository.save(info);
     }
 
-    @Transactional
     public List<ArtistInfo> getAllArtist(UserConfig userConfig) {
         List<ArtistInfo> all = artistInfoRepository.findAllBySubscribeUsers_UserId(userConfig);
         Collections.reverse(all);
         return all;
     }
 
-    @Transactional
     public List<ArtistInfo> getAllArtist(GuildConfig guildConfig) {
         List<ArtistInfo> all = artistInfoRepository.findAllBySubscribeGuilds(guildConfig);
         Collections.reverse(all);
         return all;
     }
 
-    @Transactional
     public Set<ArtistInfo> getAllArtist(Collection<Long> usersId) {
         return artistInfoRepository.findAllBySubscribeUsers_UserIdIn(usersId);
+    }
+
+    public Set<ArtistInfo> loadAll() {
+        return artistInfoRepository.findAllIsHasSubs();
     }
 
     public void save(ArtistInfo info) {

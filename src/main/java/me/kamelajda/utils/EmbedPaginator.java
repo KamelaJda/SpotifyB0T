@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class EmbedPaginator {
@@ -58,16 +58,16 @@ public class EmbedPaginator {
     private final int second;
     @Getter private final InteractionHook interaction;
     private final ActionRow customActionRow;
-    private final Consumer<EmbedPaginator> eventAction;
+    private final BiConsumer<EmbedPaginator, ButtonInteractionEvent> eventAction;
 
     @Getter @Setter
     private int thisPage = 1;
 
-    public static EmbedPaginator create(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction, ActionRow customActionRow, Consumer<EmbedPaginator> eventAction) {
+    public static EmbedPaginator create(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction, ActionRow customActionRow, BiConsumer<EmbedPaginator, ButtonInteractionEvent> eventAction) {
         return new EmbedPaginator(pages, user, eventWaiter, interaction, 60, customActionRow, eventAction);
     }
 
-    private EmbedPaginator(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction, int second, ActionRow customActionRow, Consumer<EmbedPaginator> eventAction) {
+    private EmbedPaginator(List<EmbedBuilder> pages, User user, EventWaiter eventWaiter, InteractionHook interaction, int second, ActionRow customActionRow, BiConsumer<EmbedPaginator, ButtonInteractionEvent> eventAction) {
         this.eventWaiter = eventWaiter;
         this.pages = pages;
         this.userId = user.getIdLong();
@@ -100,7 +100,7 @@ public class EmbedPaginator {
         event.deferEdit().queue();
 
         if (customActionRow != null && customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) {
-            eventAction.accept(this);
+            eventAction.accept(this, event);
         } else {
             switch (event.getComponentId()) {
                 case FIRST_ID:

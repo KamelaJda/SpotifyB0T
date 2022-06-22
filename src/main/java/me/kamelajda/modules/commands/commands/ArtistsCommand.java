@@ -18,6 +18,7 @@
 
 package me.kamelajda.modules.commands.commands;
 
+import me.kamelajda.jpa.models.ArtistCreation;
 import me.kamelajda.jpa.models.ArtistInfo;
 import me.kamelajda.services.SubscribeArtistService;
 import me.kamelajda.utils.EmbedPaginator;
@@ -31,7 +32,9 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Emoji;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.interactions.Interaction;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -44,7 +47,8 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.*;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ArtistsCommand extends ICommand {
@@ -109,10 +113,16 @@ public class ArtistsCommand extends ICommand {
         eb.setTitle(artistInfo.getDisplayName(), artistInfo.getLink());
         eb.setImage(artistInfo.getThumbnailUrl());
 
-        if (artistInfo.getLastAlbumName() != null) {
-            eb.addField(language.get("artists.last.album"),
-                String.format("[%s](%s)", artistInfo.getLastAlbumName(), artistInfo.getLastAlbumLink()), false);
-            eb.addField(language.get("artist.last.album.release.date"), artistInfo.getLastAlbumDate(), false);
+        if (artistInfo.getLastAlbum() != null) {
+            eb.addField(field(language, artistInfo, ArtistInfo::getLastAlbum));
+        }
+
+        if (artistInfo.getLastTrack() != null) {
+            eb.addField(field(language, artistInfo, ArtistInfo::getLastTrack));
+        }
+
+        if (artistInfo.getLastFeat() != null) {
+            eb.addField(field(language, artistInfo, ArtistInfo::getLastFeat));
         }
 
         if (member != null) eb.setColor(UserUtil.getColor(member));
@@ -121,14 +131,25 @@ public class ArtistsCommand extends ICommand {
         return eb;
     }
 
-    public static Consumer<EmbedPaginator> consumer(SubscribeArtistService subscribeArtistService, User user) {
-        return embedPaginator -> {
+    private static MessageEmbed.Field field(Language lang, ArtistInfo info, Function<ArtistInfo, ArtistCreation> fun) {
+        ArtistCreation apply = fun.apply(info);
+
+        return new MessageEmbed.Field(
+            lang.get("artists.last." + apply.getCreationType().name().toLowerCase()),
+            String.format("[%s](%s) - %s", apply.getName(), apply.getLink(), apply.getDate()),
+            false
+        );
+    }
+
+    public static BiConsumer<EmbedPaginator, ButtonInteractionEvent> consumer(SubscribeArtistService subscribeArtistService, User user) {
+        return (embedPaginator, event) -> {
             EmbedBuilder builder = embedPaginator.getPages().get(embedPaginator.getThisPage() - 1);
             embedPaginator.getPages().remove(builder);
             String[] s = Objects.requireNonNull(builder.build().getUrl()).split("/");
 
             Interaction interaction = embedPaginator.getInteraction().getInteraction();
-            if (interaction.isFromGuild()) {
+
+            if (event.getComponentId().endsWith("-server")) {
                 Member id = interaction.getGuild().getMemberById(user.getIdLong());
                 if (id == null || !id.hasPermission(Permission.MANAGE_SERVER)) return;
 

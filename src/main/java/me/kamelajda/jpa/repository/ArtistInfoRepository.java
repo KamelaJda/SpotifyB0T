@@ -34,18 +34,27 @@ public interface ArtistInfoRepository extends JpaRepository<ArtistInfo, Long> {
     Optional<ArtistInfo> findBySpotifyId(String spotifyId);
 
     @Query(
-        " SELECT new ArtistInfo(l.id, l.spotifyId, l.displayName, l.thumbnailUrl, l.link, l.lastAlbumName, l.lastAlbumDate, l.lastAlbumLink) " +
+        " SELECT new ArtistInfo(l.id, l.spotifyId, l.displayName, l.thumbnailUrl, l.link, l.lastTrack, l.lastAlbum, l.lastFeat) " +
         " FROM ArtistInfo l" +
         " WHERE :userConfig MEMBER l.subscribeUsers"
     )
     List<ArtistInfo> findAllBySubscribeUsers_UserId(UserConfig userConfig);
 
     @Query(
-        " SELECT new ArtistInfo(l.id, l.spotifyId, l.displayName, l.thumbnailUrl, l.link, l.lastAlbumName, l.lastAlbumDate, l.lastAlbumLink) " +
-            " FROM ArtistInfo l" +
-            " WHERE :guildConfig MEMBER l.subscribeGuilds"
+        " SELECT new ArtistInfo(l.id, l.spotifyId, l.displayName, l.thumbnailUrl, l.link, l.lastTrack, l.lastAlbum, l.lastFeat) " +
+        " FROM ArtistInfo l" +
+        " WHERE :guildConfig MEMBER l.subscribeGuilds"
     )
     List<ArtistInfo> findAllBySubscribeGuilds(GuildConfig guildConfig);
 
     Set<ArtistInfo> findAllBySubscribeUsers_UserIdIn(Collection<Long> usersIds);
+
+    @Query(
+        "SELECT l " +
+            "FROM ArtistInfo l " +
+            "WHERE " +
+            "l.subscribeGuilds IS NOT EMPTY " +
+            "OR l.subscribeUsers IS NOT EMPTY"
+    )
+    Set<ArtistInfo> findAllIsHasSubs();
 }

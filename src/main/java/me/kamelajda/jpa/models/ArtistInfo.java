@@ -36,15 +36,15 @@ import java.util.Set;
 @Builder
 public class ArtistInfo {
 
-    public ArtistInfo(Long id, String spotifyId, String displayName, String thumbnailUrl, String link, String lastAlbumName, String lastAlbumDate, String lastAlbumLink) {
+    public ArtistInfo(Long id, String spotifyId, String displayName, String thumbnailUrl, String link, ArtistCreation lastAlbum, ArtistCreation lastTrack, ArtistCreation lastFeat) {
         this.id = id;
         this.spotifyId = spotifyId;
         this.displayName = displayName;
         this.thumbnailUrl = thumbnailUrl;
         this.link = link;
-        this.lastAlbumName = lastAlbumName;
-        this.lastAlbumDate = lastAlbumDate;
-        this.lastAlbumLink = lastAlbumLink;
+        this.lastAlbum = lastAlbum;
+        this.lastTrack = lastTrack;
+        this.lastFeat = lastFeat;
     }
 
     @Id @GeneratedValue private Long id;
@@ -57,9 +57,14 @@ public class ArtistInfo {
 
     private String link;
 
-    private String lastAlbumName;
-    private String lastAlbumDate;
-    private String lastAlbumLink;
+    @OneToOne
+    private ArtistCreation lastAlbum;
+
+    @OneToOne
+    private ArtistCreation lastTrack;
+
+    @OneToOne
+    private ArtistCreation lastFeat;
 
     @ToString.Exclude
     @LazyCollection(value = LazyCollectionOption.EXTRA)
