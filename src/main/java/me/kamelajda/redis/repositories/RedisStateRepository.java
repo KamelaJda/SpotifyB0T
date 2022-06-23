@@ -21,8 +21,10 @@ package me.kamelajda.redis.repositories;
 import me.kamelajda.redis.data.RedisSpotifyState;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.List;
+
 public interface RedisStateRepository extends CrudRepository<RedisSpotifyState, String> {
 
-    void deleteByUserId(Long userId);
+    List<RedisSpotifyState> removeByUserId(Long userId);
 
 }

@@ -35,8 +35,7 @@ public class RedisStateService implements RedisService<RedisSpotifyState, String
 
     @Override
     public RedisSpotifyState save(RedisSpotifyState value) {
-//        redisAvatarRepository.deleteByUserId(value.getUserId());
-
+        redisAvatarRepository.removeByUserId(value.getUserId());
         value.setTimeToLive(5L);
         return redisAvatarRepository.save(value);
     }
