@@ -217,16 +217,16 @@ public class SpotifyService {
     }
 
     public ArtistCreation isNew(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType) {
-        if (old.getLink().equals(maybeNew.getExternalUrls().get("spotify"))) return null;
+        if (old.getLink().equals(maybeNew.getExternalUrls().get("spotify")) || old.getName().equals(maybeNew.getName())) return null;
 
         return artistCreationRepository.save(SubscribeArtistService.createCreation(creationType, maybeNew));
     }
 
-    public boolean configure(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType, ArtistInfo info, List<Object[]> list) {
-        if (maybeNew == null) return false;
+    public void configure(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType, ArtistInfo info, List<Object[]> list) {
+        if (maybeNew == null) return;
         try {
             ArtistCreation isNew = isNew(old, maybeNew, creationType);
-            if (isNew == null) return false;
+            if (isNew == null) return;
 
             switch (creationType) {
                 case ALBUM:
@@ -242,12 +242,9 @@ public class SpotifyService {
             }
 
             list.add(new Object[] {maybeNew, isNew});
-            return true;
         } catch (Exception e) {
             log.error("An error occurred while getting a last album", e);
         }
-
-        return false;
     }
 
     public List<MessageEmbed> embeds(Language l, ArtistInfo info, List<Object[]> objects, String avatarUrl) {
