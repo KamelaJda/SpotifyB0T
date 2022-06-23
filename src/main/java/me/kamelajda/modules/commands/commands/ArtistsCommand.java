@@ -143,6 +143,8 @@ public class ArtistsCommand extends ICommand {
 
     public static BiConsumer<EmbedPaginator, ButtonInteractionEvent> consumer(SubscribeArtistService subscribeArtistService, User user) {
         return (embedPaginator, event) -> {
+            if (embedPaginator.getUserId() != user.getIdLong()) return;
+
             EmbedBuilder builder = embedPaginator.getPages().get(embedPaginator.getThisPage() - 1);
             embedPaginator.getPages().remove(builder);
             String[] s = Objects.requireNonNull(builder.build().getUrl()).split("/");
