@@ -79,6 +79,8 @@ public class ArtistsCommand extends ICommand {
 
         List<ArtistInfo> list;
 
+        context.getEvent().deferReply(false).complete();
+
         if (type == SubscribeCommand.SubscribeType.PRIVATE || type == SubscribeCommand.SubscribeType.SERVER && !context.getEvent().isFromGuild()) {
             list = subscribeArtistService.getAllArtist(context.getUserConfig());
         } else {
@@ -86,12 +88,10 @@ public class ArtistsCommand extends ICommand {
         }
 
         if (list == null || list.isEmpty()) {
-            context.getEvent().deferReply(true).queue();
-            context.sendTranslate("artists.empty");
+            context.getHook().editOriginal(context.getLanguage().get("artists.empty")).queue();
             return false;
         }
 
-        context.getEvent().deferReply(false).complete();
         context.getHook().editOriginal(context.getLanguage().get("global.generic.loading")).queue();
 
         boolean forServer = type == SubscribeCommand.SubscribeType.SERVER && context.getGuild() != null;

@@ -61,6 +61,7 @@ public class ContributorsCommand extends ICommand {
     @Override
     protected boolean execute(SlashContext context) {
         context.getEvent().deferReply(true).queue();
+        context.sendTranslate("global.generic.loading");
 
         List<EmbedBuilder> pages = new ArrayList<>();
 

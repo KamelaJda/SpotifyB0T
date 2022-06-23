@@ -101,9 +101,9 @@ public class ConfigureGuildCommand extends ICommand {
 
     @SubCommand(name = "remove")
     public boolean remove(SlashContext context) {
-        context.getEvent().deferReply(false).queue();
-
         String key = context.getEvent().getOption("key").getAsString();
+
+        context.getEvent().deferReply(false).queue();
 
         GuildConfig config = guildConfigService.load(context.getGuild().getIdLong());
 
