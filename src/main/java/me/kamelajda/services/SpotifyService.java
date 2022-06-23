@@ -211,8 +211,7 @@ public class SpotifyService {
                         } catch (InterruptedException ignored) { }
                     }
                 }
-//            }, timeToRefresh(LanguageType.POLISH), TimeUnit.HOURS.toSeconds(5), TimeUnit.SECONDS
-            }, 4, TimeUnit.HOURS.toSeconds(5), TimeUnit.SECONDS
+            }, timeToRefresh(LanguageType.POLISH), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS
         );
     }
 
