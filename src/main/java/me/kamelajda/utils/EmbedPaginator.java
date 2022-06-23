@@ -54,7 +54,7 @@ public class EmbedPaginator {
 
     private final EventWaiter eventWaiter;
     @Getter private final List<EmbedBuilder> pages;
-    private final long userId;
+    @Getter private final long userId;
     private final int second;
     @Getter private final InteractionHook interaction;
     private final ActionRow customActionRow;
@@ -134,19 +134,18 @@ public class EmbedPaginator {
     }
 
     public boolean check(ButtonInteractionEvent event) {
+        if (!event.getMessageId().equals(interaction.retrieveOriginal().complete().getId()) || event.getUser().getIdLong() != userId) return false;
+
         if (customActionRow != null && customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) return true;
 
-        if (event.getMessageId().equals(interaction.retrieveOriginal().complete().getId()) && event.getUser().getIdLong() == userId) {
-            switch (event.getComponentId()) {
-                case FIRST_ID:
-                case LEFT_ID:
-                case RIGHT_ID:
-                case LAST_ID:
-                case STOP_ID: return true;
-                default: return false;
-            }
+        switch (event.getComponentId()) {
+            case FIRST_ID:
+            case LEFT_ID:
+            case RIGHT_ID:
+            case LAST_ID:
+            case STOP_ID: return true;
+            default: return false;
         }
-        return false;
     }
 
     public void clear() {

@@ -19,13 +19,18 @@
 package me.kamelajda.modules.commands.commands;
 
 import me.kamelajda.jpa.models.ArtistInfo;
+import me.kamelajda.redis.data.RedisSpotifyState;
+import me.kamelajda.redis.services.RedisStateService;
 import me.kamelajda.services.SpotifyService;
 import me.kamelajda.services.SubscribeArtistService;
 import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Static;
+import me.kamelajda.utils.UserUtil;
 import me.kamelajda.utils.commands.ICommand;
 import me.kamelajda.utils.commands.SlashContext;
+import me.kamelajda.utils.commands.SubCommand;
 import me.kamelajda.utils.enums.CommandCategory;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -33,6 +38,7 @@ import net.dv8tion.jda.api.events.interaction.component.SelectMenuInteractionEve
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
@@ -40,6 +46,7 @@ import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -47,24 +54,37 @@ import java.util.stream.Collectors;
 
 public class SubscribeCommand extends ICommand {
 
+    private static final String AUTHORIZE_URL = "https://accounts.spotify.com/authorize" +
+        "?response_type=code" +
+        "&client_id=%s" +
+        "&scope=user-follow-read" +
+        "&redirect_uri=%s" +
+        "&state=%s";
+
     private final SubscribeArtistService subscribeArtistService;
     private final SpotifyService spotifyService;
     private final EventWaiter eventWaiter;
+    private final RedisStateService redisStateService;
 
-    public SubscribeCommand(SubscribeArtistService subscribeArtistService, SpotifyService spotifyService, EventWaiter eventWaiter) {
+    public SubscribeCommand(SubscribeArtistService subscribeArtistService, SpotifyService spotifyService, EventWaiter eventWaiter, RedisStateService redisStateService) {
         this.subscribeArtistService = subscribeArtistService;
         this.spotifyService = spotifyService;
         this.eventWaiter = eventWaiter;
+        this.redisStateService = redisStateService;
         name = "subscribe";
         category = CommandCategory.BASIC;
+
+        SubcommandData add = new SubcommandData("add", "Add new artists");
+        add.addOptions(new OptionData(OptionType.STRING, "artist", "Artist name", true));
+        add.addOptions(
+            new OptionData(OptionType.STRING, "type", "Should the subscription be server or private?")
+                .addChoice("Private (default value)", SubscribeType.PRIVATE.name())
+                .addChoice("For server", SubscribeType.SERVER.name())
+                .setRequired(false)
+        );
+
         commandData = getData()
-            .addOptions(new OptionData(OptionType.STRING, "artist", "Artist name", true))
-            .addOptions(
-                new OptionData(OptionType.STRING, "type", "Should the subscription be server or private?")
-                    .addChoice("Private (default value)", SubscribeType.PRIVATE.name())
-                    .addChoice("For server", SubscribeType.SERVER.name())
-                    .setRequired(false)
-            );
+            .addSubcommands(new SubcommandData("sync", "Sync followed artists from your Spotify account"), add);
     }
 
     @Override
@@ -113,8 +133,8 @@ public class SubscribeCommand extends ICommand {
             for (Artist s : items) {
                 if (subscribeArtist.contains(s.getId())) continue;
 
-                if (s.getName().length() > 100) builder.addOption(s.getName().substring(0, 100), s.getId());
-                else builder.addOption(s.getName(), s.getId());
+                if (s.getName().length() > 100) builder.addOption(s.getName().substring(0, 100), s.getId(), context.getLanguage().get("subscribe.followers", s.getFollowers().getTotal()));
+                else builder.addOption(s.getName(), s.getId(), context.getLanguage().get("subscribe.followers", s.getFollowers().getTotal()));
             }
 
             if (builder.getOptions().isEmpty()) {
@@ -172,6 +192,27 @@ public class SubscribeCommand extends ICommand {
                   .setActionRow(Collections.emptyList()).queue());
         });
 
+        return true;
+    }
+
+    @SubCommand(name = "sync")
+    public boolean sync(SlashContext context) {
+        context.getEvent().deferReply(true).queue();
+
+        String id = String.valueOf(Static.RANDOM.nextInt());
+
+        RedisSpotifyState build = RedisSpotifyState.builder().userId(context.getUser().getIdLong()).state(id).build();
+        redisStateService.save(build);
+
+        String url = String.format(AUTHORIZE_URL, spotifyService.getClientId(), spotifyService.getCallbackUrl(), id);
+
+        EmbedBuilder eb = new EmbedBuilder();
+        eb.setColor(UserUtil.getColor(context.getMember(), context.getShardManager()));
+        eb.setTimestamp(Instant.now());
+        eb.setFooter("SpotifyB0T", context.getJDA().getSelfUser().getEffectiveAvatarUrl());
+        eb.setDescription(context.getLanguage().get("subscribe.sync", url));
+
+        context.send(eb.build());
         return true;
     }
 

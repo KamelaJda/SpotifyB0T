@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.kamelajda.modules.commands.commands.*;
 import me.kamelajda.modules.commands.listener.ExecuteCommandAsButtonListener;
+import me.kamelajda.redis.services.RedisStateService;
 import me.kamelajda.services.GuildConfigService;
 import me.kamelajda.services.SpotifyService;
 import me.kamelajda.services.SubscribeArtistService;
@@ -46,10 +47,11 @@ public class CommandModule extends IModule {
     private final GuildConfigService guildConfigService;
     private final UserConfigService userConfigService;
     private final LanguageService languageService;
+    private final RedisStateService redisStateService;
 
     @Override
     public void startUp() {
-        commandManager.registerCommand(new SubscribeCommand(subscribeArtistService, spotifyService, eventWaiter));
+        commandManager.registerCommand(new SubscribeCommand(subscribeArtistService, spotifyService, eventWaiter, redisStateService));
         commandManager.registerCommand(new HelpCommand(commandManager));
         commandManager.registerCommand(new ArtistsCommand(subscribeArtistService, eventWaiter));
         commandManager.registerCommand(new ConfigureGuildCommand(guildConfigService));

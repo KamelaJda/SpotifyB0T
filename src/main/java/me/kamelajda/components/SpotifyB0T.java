@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.ServiceManager;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.modules.commands.CommandModule;
 import me.kamelajda.modules.logs.LogsModule;
+import me.kamelajda.redis.services.RedisStateService;
 import me.kamelajda.services.*;
 import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Static;
@@ -73,10 +74,11 @@ public class SpotifyB0T {
     private final GuildConfigService guildConfigService;
     private final UserConfigService userConfigService;
     private final Environment env;
+    private final RedisStateService redisStateService;
 
     private ShardManager api;
 
-    public SpotifyB0T(Environment env, EventBus eventBus, SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter, SpotifyService spotifyService, LanguageService languageService, GuildConfigService guildConfigService, UserConfigService userConfigService) {
+    public SpotifyB0T(Environment env, EventBus eventBus, SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter, SpotifyService spotifyService, LanguageService languageService, GuildConfigService guildConfigService, UserConfigService userConfigService, RedisStateService redisStateService) {
         this.env = env;
         this.subscribeArtistService = subscribeArtistService;
         this.eventBus = eventBus;
@@ -87,6 +89,7 @@ public class SpotifyB0T {
         this.defaultLanguage = LanguageType.valueOf(env.getProperty("application.defaultLanguage"));
         this.guildConfigService = guildConfigService;
         this.userConfigService = userConfigService;
+        this.redisStateService = redisStateService;
 
         start();
     }
@@ -129,7 +132,7 @@ public class SpotifyB0T {
             new CommandModule(
                 commandManager, subscribeArtistService,
                 spotifyService, eventWaiter, eventBus, guildConfigService,
-                userConfigService, languageService
+                userConfigService, languageService, redisStateService
             )
         );
 

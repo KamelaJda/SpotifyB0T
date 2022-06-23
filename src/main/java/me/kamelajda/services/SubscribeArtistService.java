@@ -18,6 +18,7 @@
 
 package me.kamelajda.services;
 
+import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.ArtistCreation;
 import me.kamelajda.jpa.models.ArtistInfo;
@@ -32,6 +33,7 @@ import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -49,16 +51,13 @@ public class SubscribeArtistService {
         this.artistCreationRepository = artistCreationRepository;
     }
 
-    
     public void addArtistsForUser(Long userId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
         addArtists(userId, null, artistId, allValues, spotifyService);
     }
 
-    
     public void addArtistsForGuild(Long guildId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
         addArtists(null, guildId, artistId, allValues, spotifyService);
     }
-
     
     public void addArtists(@Nullable Long userId, @Nullable Long guildId, List<String> artistId, List<Artist> allValues, SpotifyService spotifyService) {
         Set<ArtistInfo> artists = new HashSet<>();
@@ -66,10 +65,20 @@ public class SubscribeArtistService {
         UserConfig userObject = userId != null ? userConfigService.load(userId) : null;
         GuildConfig guildObject = guildId != null ? guildConfigService.load(guildId) : null;
 
+        System.out.println("============================");
+        System.out.println("Artists size:" + artistId.size());
+        System.out.println("============================");
+
         for (String s : artistId) {
             Artist artist = allValues.stream().filter(f -> f.getId().equals(s)).findFirst().orElse(null);
 
-            if (artist == null) continue;
+            if (artist == null) {
+                System.out.println("Artysta nie znaleziony??");
+                System.out.println("---------------------------------------------------------");
+                continue;
+            }
+
+            System.out.println("Artysta: " + artist.getName());
 
             ArtistInfo artistInfo = artistInfoRepository.findBySpotifyId(s).orElseGet(() -> {
                 ArtistInfo.ArtistInfoBuilder builder =
@@ -114,7 +123,10 @@ public class SubscribeArtistService {
             if (userObject != null) artistInfo.getSubscribeUsers().add(userObject);
             if (guildObject != null) artistInfo.getSubscribeGuilds().add(guildObject);
 
+            System.out.println("Dodaje artistInfo: " + new Gson().toJson(artistInfo.getSubscribeUsers().stream().map(UserConfig::getUserId).collect(Collectors.toList())));
+
             artists.add(artistInfo);
+            System.out.println("---------------------------------------------------------");
         }
 
         artistInfoRepository.saveAll(artists);

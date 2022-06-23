@@ -19,6 +19,7 @@
 package me.kamelajda.jpa.models;
 
 import lombok.*;
+import me.kamelajda.jpa.repository.ArtistInfoRepository;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
@@ -36,15 +37,19 @@ import java.util.Set;
 @Builder
 public class ArtistInfo {
 
-    public ArtistInfo(Long id, String spotifyId, String displayName, String thumbnailUrl, String link, ArtistCreation lastAlbum, ArtistCreation lastTrack, ArtistCreation lastFeat) {
-        this.id = id;
-        this.spotifyId = spotifyId;
-        this.displayName = displayName;
-        this.thumbnailUrl = thumbnailUrl;
-        this.link = link;
-        this.lastAlbum = lastAlbum;
-        this.lastTrack = lastTrack;
-        this.lastFeat = lastFeat;
+    /**
+     * @see ArtistInfoRepository#findAllBySubscribeUsers_UserId(UserConfig)
+     * @see ArtistInfoRepository#findAllBySubscribeGuilds(GuildConfig)
+     */
+    public ArtistInfo(ArtistInfo artistInfo) {
+        this.id = artistInfo.id;
+        this.spotifyId = artistInfo.spotifyId;
+        this.displayName = artistInfo.displayName;
+        this.thumbnailUrl = artistInfo.thumbnailUrl;
+        this.link = artistInfo.link;
+        this.lastAlbum = artistInfo.lastAlbum;
+        this.lastTrack = artistInfo.lastTrack;
+        this.lastFeat = artistInfo.lastFeat;
     }
 
     @Id @GeneratedValue private Long id;

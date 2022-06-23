@@ -34,9 +34,12 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import org.apache.hc.core5.http.ParseException;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.enums.ModelObjectType;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
@@ -44,6 +47,7 @@ import se.michaelthelin.spotify.model_objects.specification.Paging;
 
 import java.awt.*;
 import java.io.IOException;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -56,7 +60,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-
 public class SpotifyService {
 
     private final ScheduledExecutorService accessTokenScheduler = Executors.newScheduledThreadPool(1);
@@ -70,14 +73,16 @@ public class SpotifyService {
     private final SubscribeArtistService subscribeArtistService;
     private final LanguageService languageService;
     private final ArtistCreationRepository artistCreationRepository;
+    private final Environment env;
 
     @Getter @Setter private ShardManager shardManager;
 
-    public SpotifyService(SpotifyApi api, SubscribeArtistService subscribeArtistService, LanguageService languageService, ArtistCreationRepository artistCreationRepository) {
+    public SpotifyService(SpotifyApi api, SubscribeArtistService subscribeArtistService, LanguageService languageService, ArtistCreationRepository artistCreationRepository, Environment env) {
         this.api = api;
         this.subscribeArtistService = subscribeArtistService;
         this.languageService = languageService;
         this.artistCreationRepository = artistCreationRepository;
+        this.env = env;
 
         refreshAccessToken();
         setupNotification();
@@ -273,6 +278,26 @@ public class SpotifyService {
         eb.setFooter("SpotifyB0T", avatarUrl);
 
         return eb.build();
+    }
+
+    public AuthorizationCodeCredentials authorizeUser(String code) throws Exception {
+        return api.authorizationCode(api.getClientId(), api.getClientSecret(), code, new URI(env.getProperty("spotify.callback"))).build().execute();
+    }
+
+    public String getClientId() {
+        return api.getClientId();
+    }
+
+    public String getCallbackUrl() {
+        return env.getProperty("spotify.callback");
+    }
+
+    public Artist[] getSubscribedArtists(AuthorizationCodeCredentials user) throws Exception {
+        SpotifyApi api = SpotifyApi.builder()
+            .setAccessToken(user.getAccessToken())
+            .setRefreshToken(user.getRefreshToken()).build();
+
+        return api.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(50).build().execute().getItems();
     }
 
 }
