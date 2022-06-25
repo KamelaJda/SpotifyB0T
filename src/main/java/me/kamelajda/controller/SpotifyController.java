@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 
 import java.util.Arrays;
@@ -57,9 +56,7 @@ public class SpotifyController {
         try {
             RedisSpotifyState spotifyState = redisStateService.findValueById(state).orElseThrow();
 
-            AuthorizationCodeCredentials user = spotifyService.authorizeUser(code);
-
-            List<Artist> artists = Arrays.stream(spotifyService.getSubscribedArtists(user)).collect(Collectors.toList());
+            List<Artist> artists = Arrays.stream(spotifyService.getSubscribedArtists(code)).collect(Collectors.toList());
 
             Set<String> subscribedArtists = subscribeArtistService
                 .getAllArtist(userConfigService.load(spotifyState.getUserId())).stream().map(ArtistInfo::getSpotifyId)

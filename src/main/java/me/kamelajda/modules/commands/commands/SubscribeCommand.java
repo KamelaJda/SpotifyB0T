@@ -57,7 +57,7 @@ public class SubscribeCommand extends ICommand {
     private static final String AUTHORIZE_URL = "https://accounts.spotify.com/authorize" +
         "?response_type=code" +
         "&client_id=%s" +
-        "&scope=user-follow-read" +
+        "&scope=user-follow-read,user-top-read" +
         "&redirect_uri=%s" +
         "&state=%s";
 

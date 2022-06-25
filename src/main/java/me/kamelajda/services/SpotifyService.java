@@ -209,15 +209,14 @@ public class SpotifyService {
                         }
                     });
 
-                    if (++index >= 10) {
-                        try {
-                            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                    try {
+                        if (++index >= 10) {
+                            Thread.sleep(TimeUnit.SECONDS.toMillis(60));
                             index = 0;
-                        } catch (InterruptedException ignored) { }
-                    }
+                        } else Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                    } catch (InterruptedException ignored) { }
                 }
-            }, timeToRefresh(LanguageType.POLISH), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS
-        );
+            }, timeToRefresh(LanguageType.POLISH), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
     }
 
     public ArtistCreation isNew(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType) {
@@ -292,12 +291,30 @@ public class SpotifyService {
         return env.getProperty("spotify.callback");
     }
 
-    public Artist[] getSubscribedArtists(AuthorizationCodeCredentials user) throws Exception {
-        SpotifyApi api = SpotifyApi.builder()
-            .setAccessToken(user.getAccessToken())
-            .setRefreshToken(user.getRefreshToken()).build();
+    public Artist[] getSubscribedArtists(String code) throws Exception {
+        AuthorizationCodeCredentials codeCredentials = api.authorizationCode(
+            api.getClientId(),
+            api.getClientSecret(),
+            code,
+            new URI(env.getProperty("spotify.callback"))
+        ).build().execute();
 
-        return api.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(50).build().execute().getItems();
+        String accessToken = codeCredentials.getAccessToken();
+        String refreshToken = codeCredentials.getRefreshToken();
+
+        SpotifyApi spotifyApi = SpotifyApi.builder()
+            .setAccessToken(accessToken)
+            .setRefreshToken(refreshToken).build();
+
+        AuthorizationCodeCredentials cr = spotifyApi.authorizationCodeRefresh(
+            env.getProperty("spotify.client.id"),
+            env.getProperty("spotify.client.secret"),
+            spotifyApi.getRefreshToken()
+        ).build().execute();
+
+        spotifyApi.setAccessToken(cr.getAccessToken());
+
+        return spotifyApi.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(50).build().execute().getItems();
     }
 
 }
