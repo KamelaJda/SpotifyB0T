@@ -159,7 +159,7 @@ public class SubscribeArtistService {
         return artistInfoRepository.findAllBySubscribeUsers_UserIdIn(usersId);
     }
 
-    public Set<ArtistInfo> loadAll() {
+    public List<ArtistInfo> loadAll() {
         return artistInfoRepository.findAllIsHasSubs();
     }
 

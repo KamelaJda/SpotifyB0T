@@ -51,10 +51,8 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -133,13 +131,15 @@ public class SpotifyService {
     public void setupNotification() {
         checkAlbumsScheduler.scheduleAtFixedRate(
             () -> {
-                Set<ArtistInfo> infos = subscribeArtistService.loadAll();
+                String avatarUrl = getShardManager().getShards().get(0).getSelfUser().getEffectiveAvatarUrl();
+                Set<String> checkedArtists = new HashSet<>();
+                List<ArtistInfo> infos = subscribeArtistService.loadAll();
 
                 int index = 0;
 
-                String avatarUrl = getShardManager().getShards().get(0).getSelfUser().getEffectiveAvatarUrl();
-
                 for (ArtistInfo info : infos) {
+                    if (!checkedArtists.add(info.getSpotifyId())) continue;
+
                     executor.execute(() -> {
                         List<Object[]> newCreations = new ArrayList<>();
 
@@ -277,10 +277,6 @@ public class SpotifyService {
         eb.setFooter("SpotifyB0T", avatarUrl);
 
         return eb.build();
-    }
-
-    public AuthorizationCodeCredentials authorizeUser(String code) throws Exception {
-        return api.authorizationCode(api.getClientId(), api.getClientSecret(), code, new URI(env.getProperty("spotify.callback"))).build().execute();
     }
 
     public String getClientId() {

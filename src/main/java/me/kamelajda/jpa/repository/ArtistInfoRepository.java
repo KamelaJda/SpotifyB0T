@@ -56,5 +56,5 @@ public interface ArtistInfoRepository extends JpaRepository<ArtistInfo, Long> {
         "l.subscribeGuilds IS NOT EMPTY " +
         "OR l.subscribeUsers IS NOT EMPTY"
     )
-    Set<ArtistInfo> findAllIsHasSubs();
+    List<ArtistInfo> findAllIsHasSubs();
 }
