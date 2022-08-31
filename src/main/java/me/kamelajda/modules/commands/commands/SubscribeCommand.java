@@ -147,8 +147,6 @@ public class SubscribeCommand extends ICommand {
             eventWaiter.waitForEvent(SelectMenuInteractionEvent.class,
                 e -> e.getComponentId().equals(componentId),
                 e -> {
-                    e.deferEdit().queue();
-
                     List<SelectOption> options = e.getSelectedOptions();
 
                     if (subscribeArtist.size() + options.size() >= Static.MAX_SUBSCRIPTIONS) {
