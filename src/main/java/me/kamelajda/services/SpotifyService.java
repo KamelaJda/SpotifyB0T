@@ -310,7 +310,7 @@ public class SpotifyService {
 
         spotifyApi.setAccessToken(cr.getAccessToken());
 
-        return spotifyApi.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(50).build().execute().getItems();
+        return spotifyApi.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(200).build().execute().getItems();
     }
 
 }
