@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,7 +55,7 @@ public class SpotifyController {
         try {
             RedisSpotifyState spotifyState = redisStateService.findValueById(state).orElseThrow();
 
-            List<Artist> artists = Arrays.stream(spotifyService.getSubscribedArtists(code)).collect(Collectors.toList());
+            List<Artist> artists = spotifyService.getSubscribedArtists(code);
 
             Set<String> subscribedArtists = subscribeArtistService
                 .getAllArtist(userConfigService.load(spotifyState.getUserId())).stream().map(ArtistInfo::getSpotifyId)

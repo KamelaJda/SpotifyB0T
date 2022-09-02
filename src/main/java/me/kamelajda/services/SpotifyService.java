@@ -48,6 +48,7 @@ import se.michaelthelin.spotify.model_objects.specification.Paging;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -59,6 +60,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class SpotifyService {
+
+    private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
 
     private final ScheduledExecutorService accessTokenScheduler = Executors.newScheduledThreadPool(1);
 
@@ -98,8 +101,9 @@ public class SpotifyService {
 
     public AlbumSimplified getLastTrack(String artistId) throws IOException, ParseException, SpotifyWebApiException {
         AlbumSimplified[] execute = api.getArtistsAlbums(artistId).album_type("single").limit(1).offset(0).build().execute().getItems();
+
         if (execute == null || execute.length == 0) return null;
-        return execute[0];
+        return Arrays.stream(execute).filter(p -> !p.getArtists()[0].getId().equals(artistId)).findFirst().orElse(null);
     }
 
     public AlbumSimplified getLastFeat(String artistId) throws IOException, ParseException, SpotifyWebApiException {
@@ -121,7 +125,7 @@ public class SpotifyService {
     
     public long timeToRefresh(LanguageType lang) {
         ZonedDateTime now = ZonedDateTime.now(lang.getTimeZone());
-        ZonedDateTime nextRun = now.withHour(0).withMinute(10).withSecond(0);
+        ZonedDateTime nextRun = now.withHour(0).withMinute(3).withSecond(0);
 
         if (now.compareTo(nextRun) > 0) nextRun = nextRun.plusDays(1);
 
@@ -222,6 +226,8 @@ public class SpotifyService {
     public ArtistCreation isNew(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType) {
         if (old.getLink().equals(maybeNew.getExternalUrls().get("spotify")) || old.getName().equals(maybeNew.getName())) return null;
 
+        if (!maybeNew.getReleaseDate().equals(SDF.format(new Date()))) return null;
+
         return artistCreationRepository.save(SubscribeArtistService.createCreation(creationType, maybeNew));
     }
 
@@ -287,7 +293,7 @@ public class SpotifyService {
         return env.getProperty("spotify.callback");
     }
 
-    public Artist[] getSubscribedArtists(String code) throws Exception {
+    public List<Artist> getSubscribedArtists(String code) throws Exception {
         AuthorizationCodeCredentials codeCredentials = api.authorizationCode(
             api.getClientId(),
             api.getClientSecret(),
@@ -310,7 +316,7 @@ public class SpotifyService {
 
         spotifyApi.setAccessToken(cr.getAccessToken());
 
-        return spotifyApi.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(200).build().execute().getItems();
+        return Arrays.asList(spotifyApi.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(50).build().execute().getItems());
     }
 
 }
