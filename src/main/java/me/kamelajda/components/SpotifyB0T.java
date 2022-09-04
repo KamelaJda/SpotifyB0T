@@ -18,14 +18,16 @@
 
 package me.kamelajda.components;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.EventBus;
-import com.google.common.util.concurrent.ServiceManager;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.modules.commands.CommandModule;
 import me.kamelajda.modules.logs.LogsModule;
 import me.kamelajda.redis.services.RedisStateService;
-import me.kamelajda.services.*;
+import me.kamelajda.services.GuildConfigService;
+import me.kamelajda.services.SpotifyService;
+import me.kamelajda.services.SubscribeArtistService;
+import me.kamelajda.services.UserConfigService;
 import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Static;
 import me.kamelajda.utils.commands.CommandExecute;
@@ -76,6 +78,7 @@ public class SpotifyB0T {
     private final Environment env;
     private final RedisStateService redisStateService;
 
+    @Getter
     private ShardManager api;
 
     public SpotifyB0T(Environment env, EventBus eventBus, SubscribeArtistService subscribeArtistService, EventWaiter eventWaiter, SpotifyService spotifyService, LanguageService languageService, GuildConfigService guildConfigService, UserConfigService userConfigService, RedisStateService redisStateService) {
@@ -125,8 +128,6 @@ public class SpotifyB0T {
             System.exit(1);
         }
 
-        ServiceManager serviceManager = new ServiceManager(ImmutableList.of(new StatusService(api, env)));
-
         List<IModule> modules = new ArrayList<>();
         modules.add(
             new CommandModule(
@@ -163,6 +164,5 @@ public class SpotifyB0T {
         api.setActivity(Activity.playing(language.get("status.hi")));
 
         spotifyService.setShardManager(api);
-        serviceManager.startAsync();
     }
 }

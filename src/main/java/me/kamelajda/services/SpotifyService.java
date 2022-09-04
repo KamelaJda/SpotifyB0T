@@ -224,7 +224,7 @@ public class SpotifyService {
     }
 
     public ArtistCreation isNew(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType) {
-        if (old.getLink().equals(maybeNew.getExternalUrls().get("spotify")) || old.getName().equals(maybeNew.getName())) return null;
+        if (old != null && (old.getLink().equals(maybeNew.getExternalUrls().get("spotify")) || old.getName().equals(maybeNew.getName()))) return null;
 
         if (!maybeNew.getReleaseDate().equals(SDF.format(new Date()))) return null;
 
@@ -234,6 +234,7 @@ public class SpotifyService {
     public void configure(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType, ArtistInfo info, List<Object[]> list) {
         if (maybeNew == null) return;
         try {
+            log.info("Checking {} for artist {}", creationType, info.getDisplayName());
             ArtistCreation isNew = isNew(old, maybeNew, creationType);
             if (isNew == null) return;
 
@@ -316,7 +317,17 @@ public class SpotifyService {
 
         spotifyApi.setAccessToken(cr.getAccessToken());
 
-        return Arrays.asList(spotifyApi.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(50).build().execute().getItems());
+        List<Artist> list = new ArrayList<>(List.of(spotifyApi.getUsersFollowedArtists(ModelObjectType.ARTIST).limit(50).build().execute().getItems()));
+
+        if (list.size() >= 50) {
+            Artist[] items = spotifyApi.getUsersFollowedArtists(ModelObjectType.ARTIST)
+                .limit(50)
+                .after(list.get(list.size() - 1).getId())
+                .build().execute().getItems();
+            list.addAll(List.of(items));
+        }
+
+        return list;
     }
 
 }

@@ -18,8 +18,8 @@
 
 package me.kamelajda.services;
 
-import com.google.common.util.concurrent.AbstractScheduledService;
 import lombok.extern.slf4j.Slf4j;
+import me.kamelajda.components.SpotifyB0T;
 import me.kamelajda.utils.Static;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -27,32 +27,34 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-public class StatusService extends AbstractScheduledService  {
+@EnableScheduling
+@Service
+public class StatusService  {
 
-    private static ShardManager shardManager;
-    private static String[] games;
-    private static int customLast = 0;
-    private static Activity[] customGames;
-    private static OnlineStatus customStatus;
+    private final ShardManager shardManager;
+    private final String[] games;
+    private int customLast = 0;
+    private Activity[] customGames;
+    private OnlineStatus customStatus;
 
     private int last = 0;
 
-    @SuppressWarnings("squid:S3010")
-    public StatusService(ShardManager shardManager, Environment env) {
-        StatusService.shardManager = shardManager;
-        StatusService.games = env.getProperty("status.games", String[].class);
+    public StatusService(SpotifyB0T spotifyB0T, Environment env) {
+        this.shardManager = spotifyB0T.getApi();
+        this.games = env.getProperty("status.games", String[].class);
     }
 
-    @Override
+    @Scheduled(fixedDelay = 60_000)
     protected void runOneIteration() {
-        log.debug("Czas na zmiane statusu...");
         if ((customGames != null && customGames.length != 0) && customStatus != null) {
             if (customLast >= customGames.length) customLast = 0;
             shardManager.setPresence(customStatus, customGames[customLast]);
@@ -61,9 +63,9 @@ public class StatusService extends AbstractScheduledService  {
     }
 
     private void setPresence() {
-        if (last >= StatusService.games.length) last = 0;
+        if (last >= games.length) last = 0;
         for (JDA jda : shardManager.getShards()) {
-            jda.getPresence().setActivity(Activity.playing(StatusService.games[last]
+            jda.getPresence().setActivity(Activity.playing(games[last]
                 .replace("{VERSION}", Static.VERSION)
                 .replace("{USERS:ALL}", String.valueOf(fetchUserCount()))
                 .replace("{SHARDS}", String.valueOf(shardManager.getShards().size()))
@@ -83,38 +85,33 @@ public class StatusService extends AbstractScheduledService  {
         return res.intValue();
     }
 
-    public static void setCustomGame(Activity customGame) {
+    public void setCustomGame(Activity customGame) {
         setCustomPresence(OnlineStatus.ONLINE, customGame);
     }
 
-    public static void setCustomGames(List<Activity> customGame) {
+    public void setCustomGames(List<Activity> customGame) {
         setCustomPresences(OnlineStatus.ONLINE, customGame);
     }
 
-    public static void setCustomGames(Activity... customGame) {
+    public void setCustomGames(Activity... customGame) {
         setCustomPresences(OnlineStatus.ONLINE, customGame);
     }
 
-    public static void setCustomPresence(OnlineStatus status, Activity customGame) {
+    public void setCustomPresence(OnlineStatus status, Activity customGame) {
         setCustomPresences(status, customGame == null ? null : Collections.singletonList(customGame));
     }
 
-    public static void setCustomPresences(OnlineStatus status, List<Activity> customGame) {
+    public void setCustomPresences(OnlineStatus status, List<Activity> customGame) {
         setCustomPresences(status, customGame == null ? null : customGame.toArray(new Activity[0]));
     }
 
-    public static void setCustomPresences(OnlineStatus status, Activity... customGames) {
+    public void setCustomPresences(OnlineStatus status, Activity... customGames) {
         if (customGames == null) customGames = new Activity[0];
-        StatusService.customStatus = status;
-        StatusService.customGames = customGames.length == 0 || (customGames.length == 1 && customGames[0] == null) ? null : customGames;
+        customStatus = status;
+        customGames = customGames.length == 0 || (customGames.length == 1 && customGames[0] == null) ? null : customGames;
         customLast = 0;
         shardManager.setPresence(status == null ? OnlineStatus.ONLINE : status, customGames.length > 0 ? customGames[0] : null);
         customLast++;
-    }
-
-    @Override
-    protected Scheduler scheduler() {
-        return Scheduler.newFixedRateSchedule(1, 1, TimeUnit.MINUTES);
     }
 
 }
