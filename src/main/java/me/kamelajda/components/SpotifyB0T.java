@@ -120,6 +120,7 @@ public class SpotifyB0T {
             builder.setBulkDeleteSplittingEnabled(false);
             builder.setCallbackPool(Executors.newFixedThreadPool(30));
             builder.enableCache(CacheFlag.MEMBER_OVERRIDES);
+            builder.disableCache(CacheFlag.VOICE_STATE);
             MessageAction.setDefaultMentionRepliedUser(false);
             MessageAction.setDefaultMentions(EnumSet.of(Message.MentionType.EMOTE, Message.MentionType.CHANNEL));
             this.api = builder.build();
