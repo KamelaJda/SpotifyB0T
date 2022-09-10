@@ -101,9 +101,9 @@ public class SpotifyService {
 
     public AlbumSimplified getLastTrack(String artistId) throws IOException, ParseException, SpotifyWebApiException {
         AlbumSimplified[] execute = api.getArtistsAlbums(artistId).album_type("single").limit(1).offset(0).build().execute().getItems();
-
         if (execute == null || execute.length == 0) return null;
-        return Arrays.stream(execute).filter(p -> !p.getArtists()[0].getId().equals(artistId)).findFirst().orElse(null);
+
+        return Arrays.stream(execute).filter(p -> p.getArtists()[0].getId().equals(artistId)).findFirst().orElse(null);
     }
 
     public AlbumSimplified getLastFeat(String artistId) throws IOException, ParseException, SpotifyWebApiException {
@@ -232,9 +232,9 @@ public class SpotifyService {
     }
 
     public void configure(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType, ArtistInfo info, List<Object[]> list) {
+        log.info("Checking {} for artist {}", creationType, info.getDisplayName());
         if (maybeNew == null) return;
         try {
-            log.info("Checking {} for artist {}", creationType, info.getDisplayName());
             ArtistCreation isNew = isNew(old, maybeNew, creationType);
             if (isNew == null) return;
 
