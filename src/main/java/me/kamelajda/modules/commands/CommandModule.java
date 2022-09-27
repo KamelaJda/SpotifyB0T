@@ -58,6 +58,7 @@ public class CommandModule extends IModule {
         commandManager.registerCommand(new ConfigureUserCommand(userConfigService));
         commandManager.registerCommand(new ReportBugCommand());
         commandManager.registerCommand(new ContributorsCommand(eventWaiter));
+        commandManager.registerCommand(new RefreshCommand(spotifyService));
 
         registerListener(new ExecuteCommandAsButtonListener(subscribeArtistService, eventWaiter, userConfigService, languageService, guildConfigService));
     }

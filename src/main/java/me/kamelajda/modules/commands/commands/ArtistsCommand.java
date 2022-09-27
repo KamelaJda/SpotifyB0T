@@ -18,6 +18,7 @@
 
 package me.kamelajda.modules.commands.commands;
 
+import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.ArtistCreation;
 import me.kamelajda.jpa.models.ArtistInfo;
 import me.kamelajda.services.SubscribeArtistService;
@@ -51,6 +52,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class ArtistsCommand extends ICommand {
 
     private static final ButtonImpl DELETE_BUTTON_PUBLIC = new ButtonImpl("delete-artist-server", "artist.remove.from.subs", ButtonStyle.DANGER, null, false,Emoji.fromUnicode("\uD83D\uDDD1️"));
@@ -71,6 +73,7 @@ public class ArtistsCommand extends ICommand {
                     .addChoice("For server", SubscribeCommand.SubscribeType.SERVER.name())
                     .setRequired(false)
             );
+        commandData.addOption(OptionType.STRING, "query", "Filter artists");
     }
 
     @Override
@@ -85,6 +88,13 @@ public class ArtistsCommand extends ICommand {
             list = subscribeArtistService.getAllArtist(context.getUserConfig());
         } else {
             list = subscribeArtistService.getAllArtist(context.getGuildConfig());
+        }
+
+        OptionMapping query = context.getEvent().getOption("query");
+
+        if (query != null) {
+            String queryAsString = query.getAsString();
+            list.removeIf(f -> !f.getDisplayName().toLowerCase().contains(queryAsString.toLowerCase()));
         }
 
         if (list == null || list.isEmpty()) {

@@ -34,6 +34,10 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import org.apache.hc.core5.http.ParseException;
+import org.jetbrains.annotations.Nullable;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import se.michaelthelin.spotify.SpotifyApi;
@@ -48,7 +52,6 @@ import se.michaelthelin.spotify.model_objects.specification.Paging;
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -61,7 +64,7 @@ import java.util.stream.Collectors;
 @Service
 public class SpotifyService {
 
-    private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd");
+    private static final DateTimeFormatter DTF = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     private final ScheduledExecutorService accessTokenScheduler = Executors.newScheduledThreadPool(1);
 
@@ -78,7 +81,7 @@ public class SpotifyService {
 
     @Getter @Setter private ShardManager shardManager;
 
-    public SpotifyService(SpotifyApi api, SubscribeArtistService subscribeArtistService, LanguageService languageService, ArtistCreationRepository artistCreationRepository, Environment env) {
+    public SpotifyService(SpotifyApi api, SubscribeArtistService subscribeArtistService, LanguageService languageService, ArtistCreationRepository artistCreationRepository, Environment env) throws ParseException {
         this.api = api;
         this.subscribeArtistService = subscribeArtistService;
         this.languageService = languageService;
@@ -86,7 +89,7 @@ public class SpotifyService {
         this.env = env;
 
         refreshAccessToken();
-        setupNotification();
+        checkAlbumsScheduler.scheduleAtFixedRate(() -> check(null), timeToRefresh(LanguageType.POLISH), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
     }
 
     public CompletableFuture<Paging<Artist>> searchArtists(String query) {
@@ -132,101 +135,99 @@ public class SpotifyService {
         return Duration.between(now, nextRun).getSeconds();
     }
 
-    public void setupNotification() {
-        checkAlbumsScheduler.scheduleAtFixedRate(
-            () -> {
-                String avatarUrl = getShardManager().getShards().get(0).getSelfUser().getEffectiveAvatarUrl();
-                Set<String> checkedArtists = new HashSet<>();
-                List<ArtistInfo> infos = subscribeArtistService.loadAll();
+    public void check(@Nullable String artistId) {
+        String avatarUrl = getShardManager().getShards().get(0).getSelfUser().getEffectiveAvatarUrl();
+        Set<String> checkedArtists = new HashSet<>();
 
-                int index = 0;
+        List<ArtistInfo> infos = artistId != null ? List.of(subscribeArtistService.findBySpotifyId(artistId).orElseThrow()) : subscribeArtistService.loadAll();
 
-                for (ArtistInfo info : infos) {
-                    if (!checkedArtists.add(info.getSpotifyId())) continue;
+        int index = 0;
 
-                    executor.execute(() -> {
-                        List<Object[]> newCreations = new ArrayList<>();
+        for (ArtistInfo info : infos) {
+            if (!checkedArtists.add(info.getSpotifyId())) continue;
 
-                        try {
-                            configure(info.getLastAlbum(), getLastAlbum(info.getSpotifyId()), CreationType.ALBUM, info, newCreations);
-                        } catch (Exception e) {
-                            log.error("An error occurred while getting a last album", e);
-                        }
+            executor.execute(() -> {
+                List<Object[]> newCreations = new ArrayList<>();
 
-                        try {
-                            configure(info.getLastTrack(), getLastTrack(info.getSpotifyId()), CreationType.TRACK, info, newCreations);
-                        } catch (Exception e) {
-                            log.error("An error occurred while getting a last track", e);
-                        }
-
-                        try {
-                            configure(info.getLastFeat(), getLastFeat(info.getSpotifyId()), CreationType.FEAT, info, newCreations);
-                        } catch (Exception e) {
-                            log.error("An error occurred while getting a last track", e);
-                        }
-
-                        if (newCreations.isEmpty()) return;
-
-                        try {
-                            subscribeArtistService.save(info);
-
-                            for (GuildConfig guild : info.getSubscribeGuilds().stream().filter(f -> f.getNotificationChannelId() != null).collect(Collectors.toSet())) {
-                                sendMessagesExecutor.execute(() -> {
-                                    Language l = languageService.get(guild.getLanguage());
-
-                                    List<MessageEmbed> embeds = embeds(l, info, newCreations, avatarUrl);
-
-                                    try {
-                                        Guild guildImpl = shardManager.getGuildById(guild.getGuildId());
-                                        if (guildImpl == null) return;
-
-                                        TextChannel channel = guildImpl.getTextChannelById(guild.getNotificationChannelId());
-
-                                        if (channel == null || !channel.canTalk()) {
-                                            User owner = guildImpl.getOwner().getUser();
-                                            owner.openPrivateChannel().complete().sendMessage(l.get("spotify.service.notification.senderror", guildImpl.getName())).queue();
-                                            return;
-                                        }
-
-                                        channel.sendMessageEmbeds(embeds).queue();
-                                    } catch (Exception ignored) { }
-                                });
-                            }
-
-                            for (UserConfig user : info.getSubscribeUsers()) {
-                                sendMessagesExecutor.execute(() -> {
-                                    Language l = languageService.get(user.getLanguageType());
-                                    List<MessageEmbed> embeds = embeds(l, info, newCreations, avatarUrl);
-
-                                    try {
-                                        User u = getShardManager().retrieveUserById(user.getUserId()).complete();
-                                        PrivateChannel channel = u.openPrivateChannel().complete();
-                                        channel.sendMessageEmbeds(embeds).complete();
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
-                                });
-                            }
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
-
-                    try {
-                        if (++index >= 10) {
-                            Thread.sleep(TimeUnit.SECONDS.toMillis(60));
-                            index = 0;
-                        } else Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-                    } catch (InterruptedException ignored) { }
+                try {
+                    configure(info.getLastAlbum(), getLastAlbum(info.getSpotifyId()), CreationType.ALBUM, info, newCreations);
+                } catch (Exception e) {
+                    log.error("An error occurred while getting a last album", e);
                 }
-            }, timeToRefresh(LanguageType.POLISH), TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+
+                try {
+                    configure(info.getLastTrack(), getLastTrack(info.getSpotifyId()), CreationType.TRACK, info, newCreations);
+                } catch (Exception e) {
+                    log.error("An error occurred while getting a last track", e);
+                }
+
+                try {
+                    configure(info.getLastFeat(), getLastFeat(info.getSpotifyId()), CreationType.FEAT, info, newCreations);
+                } catch (Exception e) {
+                    log.error("An error occurred while getting a last track", e);
+                }
+
+                if (newCreations.isEmpty()) return;
+
+                try {
+                    subscribeArtistService.save(info);
+
+                    for (GuildConfig guild : info.getSubscribeGuilds().stream().filter(f -> f.getNotificationChannelId() != null).collect(Collectors.toSet())) {
+                        sendMessagesExecutor.execute(() -> {
+                            Language l = languageService.get(guild.getLanguage());
+
+                            List<MessageEmbed> embeds = embeds(l, info, newCreations, avatarUrl);
+
+                            try {
+                                Guild guildImpl = shardManager.getGuildById(guild.getGuildId());
+                                if (guildImpl == null) return;
+
+                                TextChannel channel = guildImpl.getTextChannelById(guild.getNotificationChannelId());
+
+                                if (channel == null || !channel.canTalk()) {
+                                    User owner = guildImpl.getOwner().getUser();
+                                    owner.openPrivateChannel().complete().sendMessage(l.get("spotify.service.notification.senderror", guildImpl.getName())).queue();
+                                    return;
+                                }
+
+                                channel.sendMessageEmbeds(embeds).queue();
+                            } catch (Exception ignored) { }
+                        });
+                    }
+
+                    for (UserConfig user : info.getSubscribeUsers()) {
+                        sendMessagesExecutor.execute(() -> {
+                            Language l = languageService.get(user.getLanguageType());
+                            List<MessageEmbed> embeds = embeds(l, info, newCreations, avatarUrl);
+
+                            try {
+                                User u = getShardManager().retrieveUserById(user.getUserId()).complete();
+                                PrivateChannel channel = u.openPrivateChannel().complete();
+                                channel.sendMessageEmbeds(embeds).complete();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+
+            try {
+                if (++index >= 10) {
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(60));
+                    index = 0;
+                } else Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            } catch (InterruptedException ignored) { }
+        }
     }
 
     public ArtistCreation isNew(ArtistCreation old, AlbumSimplified maybeNew, CreationType creationType) {
         if (old != null && (old.getLink().equals(maybeNew.getExternalUrls().get("spotify")) || old.getName().equals(maybeNew.getName()))) return null;
 
-        if (!maybeNew.getReleaseDate().equals(SDF.format(new Date()))) return null;
+        if (DTF.parseDateTime(maybeNew.getReleaseDate()).isBefore(new DateTime().minusDays(3))) return null;
 
         return artistCreationRepository.save(SubscribeArtistService.createCreation(creationType, maybeNew));
     }

@@ -163,6 +163,10 @@ public class SubscribeArtistService {
         return artistInfoRepository.findAllIsHasSubs();
     }
 
+    public Optional<ArtistInfo> findBySpotifyId(String spotifyId) {
+        return artistInfoRepository.findBySpotifyId(spotifyId);
+    }
+
     public void save(ArtistInfo info) {
         artistInfoRepository.save(info);
     }
