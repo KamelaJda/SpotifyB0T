@@ -31,32 +31,30 @@ import me.kamelajda.utils.enums.CommandCategory;
 import me.kamelajda.utils.language.Language;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Emoji;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.interactions.Interaction;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.internal.interactions.component.ButtonImpl;
-import org.jetbrains.annotations.Nullable;
+import org.springframework.lang.Nullable;
 
 import java.awt.*;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ArtistsCommand extends ICommand {
 
-    private static final ButtonImpl DELETE_BUTTON_PUBLIC = new ButtonImpl("delete-artist-server", "artist.remove.from.subs", ButtonStyle.DANGER, null, false,Emoji.fromUnicode("\uD83D\uDDD1️"));
-    private static final ButtonImpl DELETE_BUTTON_PRIVATE = new ButtonImpl("delete-artist-private", "artist.remove.from.subs", ButtonStyle.DANGER, null, false,Emoji.fromUnicode("\uD83D\uDDD1️"));
+    private static final ButtonImpl DELETE_BUTTON_PUBLIC = new ButtonImpl("delete-artist-server", "artist.remove.from.subs", ButtonStyle.DANGER, null, false, Emoji.fromUnicode("\uD83D\uDDD1️"));
+    private static final ButtonImpl DELETE_BUTTON_PRIVATE = new ButtonImpl("delete-artist-private", "artist.remove.from.subs", ButtonStyle.DANGER, null, false, Emoji.fromUnicode("\uD83D\uDDD1️"));
 
     private final SubscribeArtistService subscribeArtistService;
     private final EventWaiter eventWaiter;
@@ -66,18 +64,11 @@ public class ArtistsCommand extends ICommand {
         this.eventWaiter = eventWaiter;
         name = "artists";
         category = CommandCategory.BASIC;
-        commandData = getData()
-            .addOptions(
-                new OptionData(OptionType.STRING, "type", "View your subscriptions or server subscriptions")
-                    .addChoice("Private (default value)", SubscribeCommand.SubscribeType.PRIVATE.name())
-                    .addChoice("For server", SubscribeCommand.SubscribeType.SERVER.name())
-                    .setRequired(false)
-            );
-        commandData.addOption(OptionType.STRING, "query", "Filter artists");
+        usage = "[type:string] [query:string]";
     }
 
     @Override
-    protected boolean execute(SlashContext context) {
+    protected void execute(SlashContext context) {
         SubscribeCommand.SubscribeType type = SubscribeCommand.SubscribeType.valueOf(context.getEvent().getOption("type", SubscribeCommand.SubscribeType.PRIVATE.name(), OptionMapping::getAsString));
 
         List<ArtistInfo> list;
@@ -99,7 +90,7 @@ public class ArtistsCommand extends ICommand {
 
         if (list == null || list.isEmpty()) {
             context.getHook().editOriginal(context.getLanguage().get("artists.empty")).queue();
-            return false;
+            return;
         }
 
         context.getHook().editOriginal(context.getLanguage().get("global.generic.loading")).queue();
@@ -107,13 +98,17 @@ public class ArtistsCommand extends ICommand {
         boolean forServer = type == SubscribeCommand.SubscribeType.SERVER && context.getGuild() != null;
         String name = forServer ? context.getGuild().getName() : context.getUser().getAsMention();
 
-        List<EmbedBuilder> pages = list.stream()
-            .map(m -> embed(context.getLanguage(), context.getMember(), m, type, name))
-            .collect(Collectors.toList());
+        List<EmbedBuilder> pages = list.stream().map(m -> embed(context.getLanguage(), context.getMember(), m, type, name)).toList();
 
         EmbedPaginator.create(pages, context.getUser(), eventWaiter, context.getHook(), formatButton(context.getLanguage(), forServer), consumer(subscribeArtistService, context.getUser()));
+    }
 
-        return true;
+    @Override
+    protected void updateOptionData(OptionData optionData, String key, String subcommand) {
+        if (!key.equals("type")) return;
+
+        optionData.addChoice("private", SubscribeCommand.SubscribeType.PRIVATE.name());
+        optionData.addChoice("server", SubscribeCommand.SubscribeType.SERVER.name());
     }
 
     public static EmbedBuilder embed(Language language, @Nullable Member member, ArtistInfo artistInfo, SubscribeCommand.SubscribeType type, String name) {

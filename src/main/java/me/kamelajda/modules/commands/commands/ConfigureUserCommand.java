@@ -32,6 +32,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 import java.time.Instant;
 
+@Deprecated
 public class ConfigureUserCommand extends ICommand {
 
     private static final String FORMAT = "%s **->** %s";
@@ -50,17 +51,17 @@ public class ConfigureUserCommand extends ICommand {
             languageOption.addChoice(value.getDisplayName(), value.name());
         }
 
-        commandData = getData().addOptions(languageOption);
+//        commandData = getData().addOptions(languageOption);
     }
 
     @Override
-    protected boolean execute(SlashContext context) {
+    protected void execute(SlashContext context) {
         OptionMapping language = context.getEvent().getOption("language");
         context.getEvent().deferReply(true).queue();
 
         if (language == null) {
             context.sendTranslate("configureuser.not.args");
-            return false;
+            return;
         }
 
         UserConfig config = userConfigService.load(context.getUser().getIdLong());
@@ -74,14 +75,12 @@ public class ConfigureUserCommand extends ICommand {
         String s = language.getAsString();
         LanguageType type = LanguageType.valueOf(s);
 
-        eb.addField(context.getLanguage().get("configureuser.changed.language"), String.format(FORMAT, config.getLanguageType().getDisplayName(), type.getDisplayName()), false);
-        config.setLanguageType(type);
+//        eb.addField(context.getLanguage().get("configureuser.changed.language"), String.format(FORMAT, config.getLanguageType().getDisplayName(), type.getDisplayName()), false);
+//        config.setLanguageType(type);
 
         context.send(eb.build());
 
         userConfigService.save(config);
-
-        return true;
     }
 
 

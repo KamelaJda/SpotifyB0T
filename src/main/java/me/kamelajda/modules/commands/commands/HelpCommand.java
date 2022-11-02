@@ -27,8 +27,9 @@ import me.kamelajda.utils.language.Language;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import org.jetbrains.annotations.Nullable;
+import org.springframework.lang.Nullable;
 
+@Deprecated
 public class HelpCommand extends ICommand {
 
     private final CommandManager commandManager;
@@ -37,23 +38,20 @@ public class HelpCommand extends ICommand {
         this.commandManager = commandManager;
         name = "help";
         category = CommandCategory.BASIC;
-        commandData = getData();
     }
 
     @Override
-    public boolean execute(SlashContext context) {
+    public void execute(SlashContext context) {
         context.getEvent().deferReply(true).queue();
 
         ICommand command = commandManager.getCommands().get(context.getEvent().getOption("command", OptionMapping::getAsString));
 
         if (command == null) {
             context.sendTranslate("help.command.not.found");
-            return false;
+            return;
         }
 
         context.send(embed(command, (context.getEvent().isFromGuild() ? context.getMember() : null), context.getLanguage()).build());
-
-        return true;
     }
 
     public static EmbedBuilder embed(ICommand cmd, Language language) {

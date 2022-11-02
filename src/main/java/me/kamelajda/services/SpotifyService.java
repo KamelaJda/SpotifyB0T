@@ -31,14 +31,18 @@ import me.kamelajda.utils.language.Language;
 import me.kamelajda.utils.language.LanguageService;
 import me.kamelajda.utils.language.LanguageType;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import org.apache.hc.core5.http.ParseException;
-import org.jetbrains.annotations.Nullable;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.core.env.Environment;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.enums.ModelObjectType;
@@ -197,6 +201,7 @@ public class SpotifyService {
 
                     for (UserConfig user : info.getSubscribeUsers()) {
                         sendMessagesExecutor.execute(() -> {
+
                             Language l = languageService.get(user.getLanguageType());
                             List<MessageEmbed> embeds = embeds(l, info, newCreations, avatarUrl);
 
@@ -216,8 +221,8 @@ public class SpotifyService {
             });
 
             try {
-                if (++index >= 10) {
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(60));
+                if (++index >= 20) {
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(30));
                     index = 0;
                 } else Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             } catch (InterruptedException ignored) { }

@@ -21,15 +21,15 @@ package me.kamelajda.utils;
 import lombok.Getter;
 import lombok.Setter;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
-import net.dv8tion.jda.api.entities.Emoji;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.components.ActionComponent;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,12 +83,12 @@ public class EmbedPaginator {
     }
 
     private void start() {
-        MessageBuilder builder = new MessageBuilder();
+        MessageEditBuilder builder = new MessageEditBuilder();
+        builder.setContent(null);
         builder.setEmbeds(render(1));
-        builder.setActionRows(getActionRow(1));
+        builder.setComponents(getActionRow(1));
 
-        interaction.editOriginal(builder.build())
-            .queue(msg -> waitForReaction());
+        interaction.editOriginal(builder.build()).queue(msg -> waitForReaction());
     }
 
     private void waitForReaction() {
@@ -125,9 +125,9 @@ public class EmbedPaginator {
 
         if (thisPage == -1) return;
 
-        MessageBuilder mb = new MessageBuilder();
+        MessageEditBuilder mb = new MessageEditBuilder();
         mb.setEmbeds(render(thisPage));
-        mb.setActionRows(getActionRow(thisPage));
+        mb.setComponents(getActionRow(thisPage));
 
         event.getHook().editOriginal(mb.build()).queue();
         waitForReaction();
@@ -138,14 +138,10 @@ public class EmbedPaginator {
 
         if (customActionRow != null && customActionRow.getActionComponents().stream().map(ActionComponent::getId).collect(Collectors.toSet()).contains(event.getComponentId())) return true;
 
-        switch (event.getComponentId()) {
-            case FIRST_ID:
-            case LEFT_ID:
-            case RIGHT_ID:
-            case LAST_ID:
-            case STOP_ID: return true;
-            default: return false;
-        }
+        return switch (event.getComponentId()) {
+            case FIRST_ID, LEFT_ID, RIGHT_ID, LAST_ID, STOP_ID -> true;
+            default -> false;
+        };
     }
 
     public void clear() {

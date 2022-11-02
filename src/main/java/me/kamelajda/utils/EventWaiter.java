@@ -20,7 +20,7 @@ package me.kamelajda.utils;
 
 import net.dv8tion.jda.api.events.Event;
 import net.dv8tion.jda.api.events.GenericEvent;
-import net.dv8tion.jda.api.events.ShutdownEvent;
+import net.dv8tion.jda.api.events.session.ShutdownEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.hooks.SubscribeEvent;
 import net.dv8tion.jda.internal.utils.Checks;
@@ -106,9 +106,7 @@ public class EventWaiter implements EventListener {
                 set.removeAll(
                     Stream.of(toRemove).filter(i -> i.attempt(event)).collect(Collectors.toSet()));
             }
-            if (event instanceof ShutdownEvent && shutdownAutomatically) {
-                threadpool.shutdown();
-            }
+            if (event instanceof ShutdownEvent && shutdownAutomatically) threadpool.shutdown();
             c = c.getSuperclass();
         }
     }

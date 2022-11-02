@@ -31,18 +31,18 @@ import me.kamelajda.utils.commands.SlashContext;
 import me.kamelajda.utils.commands.SubCommand;
 import me.kamelajda.utils.enums.CommandCategory;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.events.interaction.component.SelectMenuInteractionEvent;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
-import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
 import net.dv8tion.jda.api.interactions.components.selections.SelectOption;
+import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
 
@@ -73,22 +73,10 @@ public class SubscribeCommand extends ICommand {
         this.redisStateService = redisStateService;
         name = "subscribe";
         category = CommandCategory.BASIC;
-
-        SubcommandData add = new SubcommandData("add", "Add new artists");
-        add.addOptions(new OptionData(OptionType.STRING, "artist", "Artist name", true));
-        add.addOptions(
-            new OptionData(OptionType.STRING, "type", "Should the subscription be server or private?")
-                .addChoice("Private (default value)", SubscribeType.PRIVATE.name())
-                .addChoice("For server", SubscribeType.SERVER.name())
-                .setRequired(false)
-        );
-
-        commandData = getData()
-            .addSubcommands(new SubcommandData("sync", "Sync followed artists from your Spotify account"), add);
     }
 
-    @Override
-    protected boolean execute(SlashContext context) {
+    @SubCommand(name = "add", usage = "[artist:string]")
+    public void add(SlashContext context) {
         context.getEvent().deferReply(true).queue();
         String artist = Objects.requireNonNull(context.getEvent().getOption("artist")).getAsString();
 
@@ -96,12 +84,12 @@ public class SubscribeCommand extends ICommand {
 
         if (type == SubscribeType.SERVER && !context.getMember().hasPermission(Permission.MANAGE_SERVER)) {
             context.sendTranslate("global.command.not.permissions", Permission.MANAGE_SERVER.getName());
-            return false;
+            return;
         }
 
         if (type == SubscribeType.SERVER && !context.getEvent().isFromGuild()) {
             context.sendTranslate("subscribe.only.in.guild", Permission.MANAGE_SERVER.name());
-            return false;
+            return;
         }
 
         context.sendTranslate("subscribe.search.start");
@@ -127,7 +115,7 @@ public class SubscribeCommand extends ICommand {
 
             String componentId = context.getUser().getId() + "-choose-artists";
 
-            SelectMenu.Builder builder = SelectMenu.create(componentId).setPlaceholder(context.getLanguage().get("subscribe.artists.choose"));
+            StringSelectMenu.Builder builder = StringSelectMenu.create(componentId).setPlaceholder(context.getLanguage().get("subscribe.artists.choose"));
             builder.setMinValues(1).setMaxValues(items.size());
 
             for (Artist s : items) {
@@ -144,7 +132,7 @@ public class SubscribeCommand extends ICommand {
 
             context.getHook().editOriginal(context.getLanguage().get("subscribe.choose.artists")).setActionRow(builder.build()).queue();
 
-            eventWaiter.waitForEvent(SelectMenuInteractionEvent.class,
+            eventWaiter.waitForEvent(StringSelectInteractionEvent.class,
                 e -> e.getComponentId().equals(componentId),
                 e -> {
                     List<SelectOption> options = e.getSelectedOptions();
@@ -173,13 +161,14 @@ public class SubscribeCommand extends ICommand {
                         if (id != null) notificationChannel = id.getAsMention();
                     }
 
-                    MessageBuilder messageBuilder = new MessageBuilder(context.getLanguage().get("subscribe.success.subscribed." + type.name().toLowerCase(), options.size(), notificationChannel));
+                    MessageEditBuilder messageBuilder = new MessageEditBuilder();
+                    messageBuilder.setContent(context.getLanguage().get("subscribe.success.subscribed." + type.name().toLowerCase(), options.size(), notificationChannel));
 
                     if (type == SubscribeType.SERVER && context.getGuildConfig().getNotificationChannelId() == null) {
-                        messageBuilder.append("\n\n").append(context.getLanguage().get("subscribe.tip"));
+                        messageBuilder.setContent(messageBuilder.getContent() + "\n\n" + context.getLanguage().get("subscribe.tip"));
                     }
 
-                    messageBuilder.setActionRows(ActionRow.of(Button.success("executecommand-artists-" + type.name().toLowerCase(), context.getLanguage().get("subscribe.button.label"))));
+                    messageBuilder.setComponents(ActionRow.of(Button.success("executecommand-artists-" + type.name().toLowerCase(), context.getLanguage().get("subscribe.button.label"))));
 
                     context.getHook().editOriginal(messageBuilder.build()).queue();
               },
@@ -189,12 +178,10 @@ public class SubscribeCommand extends ICommand {
                   .editOriginal(context.getLanguage().get("global.timeout"))
                   .setActionRow(Collections.emptyList()).queue());
         });
-
-        return true;
     }
 
     @SubCommand(name = "sync")
-    public boolean sync(SlashContext context) {
+    public void sync(SlashContext context) {
         context.getEvent().deferReply(true).queue();
 
         String id = String.valueOf(Static.RANDOM.nextInt());
@@ -211,7 +198,16 @@ public class SubscribeCommand extends ICommand {
         eb.setDescription(context.getLanguage().get("subscribe.sync", url));
 
         context.send(eb.build());
-        return true;
+    }
+
+    @Override
+    protected void updateSubcommandData(SubcommandData subcommandData, String key) {
+        subcommandData.addOptions(
+            new OptionData(OptionType.STRING, "type", "Should the subscription be server or private?")
+                .addChoice("private", SubscribeType.PRIVATE.name())
+                .addChoice("server", SubscribeType.SERVER.name())
+                .setRequired(false)
+        );
     }
 
     public enum SubscribeType {

@@ -18,6 +18,7 @@
 
 package me.kamelajda.modules.commands.commands;
 
+import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.GuildConfig;
 import me.kamelajda.services.GuildConfigService;
 import me.kamelajda.utils.Static;
@@ -29,15 +30,18 @@ import me.kamelajda.utils.enums.CommandCategory;
 import me.kamelajda.utils.language.LanguageType;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.unions.GuildChannelUnion;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 
 import java.time.Instant;
-import java.util.Set;
 
+@Slf4j
 public class ConfigureGuildCommand extends ICommand {
 
     private static final String FORMAT = "%s **➔** %s";
@@ -49,19 +53,18 @@ public class ConfigureGuildCommand extends ICommand {
         name = "configureguild";
         category = CommandCategory.CONFIGURE;
         onlyInGuild = true;
-        requiredPermissions = Set.of(Permission.MANAGE_SERVER);
-        commandData = getData().addSubcommands(setSubcommands(), removeCommands());
+        requiredPermissions = DefaultMemberPermissions.enabledFor(Permission.MANAGE_SERVER);
     }
 
     @SubCommand(name = "set")
-    public boolean set(SlashContext context) {
+    public void set(SlashContext context) {
         OptionMapping language = context.getEvent().getOption("language");
         OptionMapping notification = context.getEvent().getOption("notification");
 
-        if (language == null && notification == null || language == null && notification.getAsTextChannel() == null) {
+        if (language == null && notification == null) {
             context.getEvent().deferReply(true).queue();
             context.sendTranslate("configureguild.not.args");
-            return false;
+            return;
         }
 
         context.getEvent().deferReply(false).queue();
@@ -78,8 +81,8 @@ public class ConfigureGuildCommand extends ICommand {
             config.setLanguage(type);
         }
 
-        if (notification != null && notification.getAsTextChannel() != null) {
-            TextChannel channel = notification.getAsTextChannel();
+        if (notification != null) {
+            GuildChannelUnion channel = notification.getAsChannel();
 
             String channelName = null;
             if (config.getNotificationChannelId() != null) {
@@ -95,12 +98,10 @@ public class ConfigureGuildCommand extends ICommand {
         context.send(eb.build());
 
         guildConfigService.save(config);
-
-        return true;
     }
 
     @SubCommand(name = "remove")
-    public boolean remove(SlashContext context) {
+    public void remove(SlashContext context) {
         String key = context.getEvent().getOption("key").getAsString();
 
         context.getEvent().deferReply(false).queue();
@@ -110,23 +111,28 @@ public class ConfigureGuildCommand extends ICommand {
         EmbedBuilder eb = embed(context);
 
         switch (key) {
-            case "reset-language": {
+            case "reset-language" -> {
                 eb.appendDescription(context.getLanguage().get("configureguild.deleted.language", Static.defualtLanguage));
                 config.setLanguage(Static.defualtLanguage.getLanguageType());
                 break;
             }
-            case "reset-notification": {
+            case "reset-notification" -> {
                 eb.appendDescription(context.getLanguage().get("configureguild.deleted.notification.channel"));
                 config.setNotificationChannelId(null);
                 break;
             }
-            default: eb.appendDescription(context.getLanguage().get("configureguild.deleted.error"));
+            default -> eb.appendDescription(context.getLanguage().get("configureguild.deleted.error"));
         }
 
         context.send(eb.build());
 
         guildConfigService.save(config);
-        return true;
+    }
+
+    @Override
+    protected void updateSubcommandData(SubcommandData subcommandData, String key) {
+        if (key.equals("set")) setSubcommands(subcommandData);
+        else if (key.equals("remove")) removeCommands(subcommandData);
     }
 
     private EmbedBuilder embed(SlashContext context) {
@@ -139,29 +145,19 @@ public class ConfigureGuildCommand extends ICommand {
         return eb;
     }
 
-    private static SubcommandData setSubcommands() {
-        SubcommandData setData = new SubcommandData("set", "Set value of specific key");
-
-        OptionData languageOption = new OptionData(OptionType.STRING, "language", "Choose language of server");
-
-        for (LanguageType value : LanguageType.values()) {
-            languageOption.addChoice(value.getDisplayName(), value.name());
-        }
-
+    private static void setSubcommands(SubcommandData setData) {
         OptionData notificationChannel = new OptionData(OptionType.CHANNEL, "notification", "Choose notification channel");
+        notificationChannel.setChannelTypes(ChannelType.TEXT);
 
-        return setData.addOptions(languageOption, notificationChannel);
+        setData.addOptions(notificationChannel);
     }
 
-    private static SubcommandData removeCommands() {
-        SubcommandData setData = new SubcommandData("remove", "Remove value of specific key");
-
+    private static SubcommandData removeCommands(SubcommandData removeData) {
         OptionData key = new OptionData(OptionType.STRING, "key", "Remove key", true, false);
 
-        key.addChoice("Reset language (Default is " + Static.defualtLanguage.getLanguageType().getDisplayName() + ")", "reset-language");
-        key.addChoice("Clear notification channel", "reset-notification");
+        key.addChoice("clearnotify", "reset-notification");
 
-        return setData.addOptions(key);
+        return removeData.addOptions(key);
     }
 
 }

@@ -26,7 +26,7 @@ import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.jpa.repository.ArtistCreationRepository;
 import me.kamelajda.jpa.repository.ArtistInfoRepository;
 import me.kamelajda.utils.enums.CreationType;
-import org.jetbrains.annotations.Nullable;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;

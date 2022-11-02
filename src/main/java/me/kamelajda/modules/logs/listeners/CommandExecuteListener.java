@@ -28,7 +28,7 @@ import me.kamelajda.utils.UserUtil;
 import me.kamelajda.utils.WebhookUtil;
 import me.kamelajda.utils.events.CommandExecuteEvent;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import org.springframework.core.env.Environment;
@@ -71,8 +71,8 @@ public class CommandExecuteListener implements Listener {
         builder.addField(new WebhookEmbed.EmbedField(false, "Place", place));
 
         builder.addField(new WebhookEmbed.EmbedField(false, "Time info",
-            e.getContext().getHook().getInteraction().getTimeCreated()
-                .minus(now.toEpochMilli(), ChronoUnit.MILLIS).toInstant().toEpochMilli() + "ms"));
+            Math.abs(e.getContext().getHook().getInteraction().getTimeCreated()
+                .minus(now.toEpochMilli(), ChronoUnit.MILLIS).toInstant().toEpochMilli()) + "ms"));
 
         WebhookUtil.builder()
             .env(environment)
@@ -109,7 +109,7 @@ public class CommandExecuteListener implements Listener {
 
         builder.setTitle(new WebhookEmbed.EmbedTitle(title, null));
         builder.addField(new WebhookEmbed.EmbedField(false, "Guild", String.format("%s[%s]", guild.getName(), guild.getId())));
-        builder.addField(new WebhookEmbed.EmbedField(false, "Guild locale", guild.getLocale().getDisplayName()));
+        builder.addField(new WebhookEmbed.EmbedField(false, "Guild locale", guild.getLocale().getLanguageName()));
 
         if (guild.getOwner() != null) {
             builder.addField(new WebhookEmbed.EmbedField(false, "Owner", UserUtil.getLogName(guild.getOwner())));
