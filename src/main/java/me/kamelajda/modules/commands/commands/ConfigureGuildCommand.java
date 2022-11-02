@@ -114,12 +114,10 @@ public class ConfigureGuildCommand extends ICommand {
             case "reset-language" -> {
                 eb.appendDescription(context.getLanguage().get("configureguild.deleted.language", Static.defualtLanguage));
                 config.setLanguage(Static.defualtLanguage.getLanguageType());
-                break;
             }
             case "reset-notification" -> {
                 eb.appendDescription(context.getLanguage().get("configureguild.deleted.notification.channel"));
                 config.setNotificationChannelId(null);
-                break;
             }
             default -> eb.appendDescription(context.getLanguage().get("configureguild.deleted.error"));
         }
@@ -148,16 +146,13 @@ public class ConfigureGuildCommand extends ICommand {
     private static void setSubcommands(SubcommandData setData) {
         OptionData notificationChannel = new OptionData(OptionType.CHANNEL, "notification", "Choose notification channel");
         notificationChannel.setChannelTypes(ChannelType.TEXT);
-
         setData.addOptions(notificationChannel);
     }
 
-    private static SubcommandData removeCommands(SubcommandData removeData) {
+    private static void removeCommands(SubcommandData removeData) {
         OptionData key = new OptionData(OptionType.STRING, "key", "Remove key", true, false);
-
         key.addChoice("clearnotify", "reset-notification");
-
-        return removeData.addOptions(key);
+        removeData.addOptions(key);
     }
 
 }
