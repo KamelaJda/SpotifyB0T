@@ -146,8 +146,6 @@ public class SpotifyB0T {
             optionData.addChoice(s, s);
         }
 
-//        commandManager.getCommands().get("help").getCommandData().addOptions(optionData);
-
         LocalizationFunction localizationFunction = ResourceBundleLocalizationFunction
             .fromBundles("language/messages", Arrays.stream(LanguageType.values()).map(LanguageType::getDiscordLocale).toArray(DiscordLocale[]::new))
             .build();
