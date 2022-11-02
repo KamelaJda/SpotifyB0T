@@ -57,7 +57,7 @@ public class CommandExecute {
             if (c != null) {
                 UserConfig userConfig = userConfigService.load(e.getUser().getIdLong());
 
-                if (userConfig.getLanguageType() == null) {
+                if (userConfig.getLanguageType() == null && userConfig.getLanguageType().getDiscordLocale() != e.getUserLocale()) {
                     userConfig.setLanguageType(LanguageType.fromDiscord(e.getUserLocale()));
                     userConfigService.save(userConfig);
                 }
