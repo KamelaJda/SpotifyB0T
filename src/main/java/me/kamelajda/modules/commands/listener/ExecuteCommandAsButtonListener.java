@@ -32,6 +32,7 @@ import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Listener;
 import me.kamelajda.utils.language.Language;
 import me.kamelajda.utils.language.LanguageService;
+import me.kamelajda.utils.language.LanguageType;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 
@@ -55,7 +56,8 @@ public class ExecuteCommandAsButtonListener implements Listener {
         String rawCmd = e.getComponentId().split("executecommand-")[1];
 
         UserConfig load = userConfigService.load(e.getUser().getIdLong());
-        Language language = languageService.get(load.getLanguageType());
+
+        Language language = languageService.get(LanguageType.fromDiscord(e.getUserLocale()));
 
         if (rawCmd.equals("artists-" + SubscribeCommand.SubscribeType.SERVER.name().toLowerCase()) || rawCmd.equals("artists-" + SubscribeCommand.SubscribeType.PRIVATE.name().toLowerCase())) {
             e.deferReply(false).queue();

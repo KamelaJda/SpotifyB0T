@@ -21,17 +21,28 @@ package me.kamelajda.utils.language;
 import com.neovisionaries.i18n.CountryCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import me.kamelajda.utils.Static;
+import net.dv8tion.jda.api.interactions.DiscordLocale;
 
 import java.time.ZoneId;
 
 @Getter
 @AllArgsConstructor
 public enum LanguageType {
-    ENGLISH("en-US", "English (US)", ZoneId.of("US/Central"), CountryCode.US),
-    POLISH("pl", "Polski", ZoneId.of("Europe/Warsaw"), CountryCode.PL);
+    ENGLISH("en_US", "English (US)", ZoneId.of("US/Central"), CountryCode.US, DiscordLocale.ENGLISH_US),
+    POLISH("pl", "Polski", ZoneId.of("Europe/Warsaw"), CountryCode.PL, DiscordLocale.POLISH);
 
     private final String shortName;
     private final String displayName;
     private final ZoneId timeZone;
     private final CountryCode countryCode;
+    private final DiscordLocale discordLocale;
+
+    public static LanguageType fromDiscord(DiscordLocale userLocale) {
+        for (LanguageType value : values()) {
+            if (value.getDiscordLocale() == userLocale) return value;
+        }
+        return Static.defualtLanguage.getLanguageType();
+    }
+
 }

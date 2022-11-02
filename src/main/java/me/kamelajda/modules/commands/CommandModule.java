@@ -52,10 +52,8 @@ public class CommandModule extends IModule {
     @Override
     public void startUp() {
         commandManager.registerCommand(new SubscribeCommand(subscribeArtistService, spotifyService, eventWaiter, redisStateService));
-        commandManager.registerCommand(new HelpCommand(commandManager));
         commandManager.registerCommand(new ArtistsCommand(subscribeArtistService, eventWaiter));
         commandManager.registerCommand(new ConfigureGuildCommand(guildConfigService));
-        commandManager.registerCommand(new ConfigureUserCommand(userConfigService));
         commandManager.registerCommand(new ReportBugCommand());
         commandManager.registerCommand(new ContributorsCommand(eventWaiter));
         commandManager.registerCommand(new RefreshCommand(spotifyService));

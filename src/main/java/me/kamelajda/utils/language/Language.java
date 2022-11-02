@@ -45,7 +45,7 @@ public class Language {
         InputStream stream =
                 Thread.currentThread()
                         .getContextClassLoader()
-                        .getResourceAsStream("language/messages-" + languageType.getShortName() + ".properties");
+                        .getResourceAsStream("language/messages_" + languageType.getShortName() + ".properties");
 
         if (stream == null) {
             log.error("Cannot load language " + languageType + "!");

@@ -32,7 +32,6 @@ import me.kamelajda.utils.EventWaiter;
 import me.kamelajda.utils.Static;
 import me.kamelajda.utils.commands.CommandExecute;
 import me.kamelajda.utils.commands.CommandManager;
-import me.kamelajda.utils.commands.ICommand;
 import me.kamelajda.utils.language.Language;
 import me.kamelajda.utils.language.LanguageService;
 import me.kamelajda.utils.language.LanguageType;
@@ -43,24 +42,22 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.interactions.DiscordLocale;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.commands.localization.LocalizationFunction;
+import net.dv8tion.jda.api.interactions.commands.localization.ResourceBundleLocalizationFunction;
 import net.dv8tion.jda.api.requests.GatewayIntent;
-import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import net.dv8tion.jda.api.utils.messages.MessageRequest;
+import net.dv8tion.jda.internal.interactions.CommandDataImpl;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import javax.security.auth.login.LoginException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -109,7 +106,7 @@ public class SpotifyB0T {
         JDAHandler eventHandler = new JDAHandler(eventBus);
 
         try {
-            DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MEMBERS);
+            DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.createDefault(token, GatewayIntent.GUILD_EMOJIS_AND_STICKERS, GatewayIntent.GUILD_MEMBERS);
             builder.addEventListeners(eventHandler, eventWaiter);
             builder.setShardsTotal(Objects.requireNonNull(env.getProperty("jda.shards.total", Integer.class)));
             builder.setShards(Objects.requireNonNull(env.getProperty("jda.shards.min", Integer.class)), Objects.requireNonNull(env.getProperty("jda.shards.max", Integer.class)));
@@ -121,10 +118,10 @@ public class SpotifyB0T {
             builder.setCallbackPool(Executors.newFixedThreadPool(30));
             builder.enableCache(CacheFlag.MEMBER_OVERRIDES);
             builder.disableCache(CacheFlag.VOICE_STATE);
-            MessageAction.setDefaultMentionRepliedUser(false);
-            MessageAction.setDefaultMentions(EnumSet.of(Message.MentionType.EMOTE, Message.MentionType.CHANNEL));
+            MessageRequest.setDefaultMentionRepliedUser(false);
+            MessageRequest.setDefaultMentions(EnumSet.of(Message.MentionType.EMOJI, Message.MentionType.CHANNEL));
             this.api = builder.build();
-        } catch (LoginException e) {
+        } catch (Exception e) {
             log.error("Failed to login!", e);
             System.exit(1);
         }
@@ -149,11 +146,12 @@ public class SpotifyB0T {
             optionData.addChoice(s, s);
         }
 
-        commandManager.getCommands().get("help").getCommandData().addOptions(optionData);
+        LocalizationFunction localizationFunction = ResourceBundleLocalizationFunction
+            .fromBundles("language/messages", Arrays.stream(LanguageType.values()).map(LanguageType::getDiscordLocale).toArray(DiscordLocale[]::new))
+            .build();
 
-        List<CommandData> data = commandManager.getCommands().values().stream()
-            .map(ICommand::getCommandData)
-            .collect(Collectors.toList());
+        List<CommandDataImpl> data = commandManager.getCommands().values().stream()
+            .map(cmd -> cmd.createCommandDate(localizationFunction)).toList();
 
         for (JDA shard : api.getShards()) {
             shard.updateCommands().addCommands(data).queue();

@@ -26,6 +26,7 @@ import me.kamelajda.jpa.models.UserConfig;
 import me.kamelajda.utils.language.Language;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -117,10 +118,6 @@ public class SlashContext {
 
     public Message send(MessageEmbed message) {
         return event.getHook().sendMessageEmbeds(message).complete();
-    }
-
-    public Message send(Message message) {
-        return event.getHook().sendMessage(message).complete();
     }
 
     public MessageChannel getChannel() {

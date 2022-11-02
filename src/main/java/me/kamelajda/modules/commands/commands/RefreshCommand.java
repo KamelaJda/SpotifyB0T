@@ -22,9 +22,8 @@ import me.kamelajda.services.SpotifyService;
 import me.kamelajda.utils.commands.ICommand;
 import me.kamelajda.utils.commands.SlashContext;
 import net.dv8tion.jda.api.entities.ApplicationInfo;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 public class RefreshCommand extends ICommand {
 
@@ -33,29 +32,27 @@ public class RefreshCommand extends ICommand {
     public RefreshCommand(SpotifyService spotifyService) {
         this.spotifyService = spotifyService;
         name = "refresh";
-        commandData = getData().addOptions(new OptionData(OptionType.STRING, "artistid", "artistid", false)).setDefaultEnabled(false);
+        requiredPermissions = DefaultMemberPermissions.DISABLED;
+        usage = "[artistid:string]";
     }
 
     @Override
-    protected boolean execute(SlashContext context) {
+    protected void execute(SlashContext context) {
         context.getEvent().deferReply(true).queue();
 
         ApplicationInfo complete = context.getShardManager().retrieveApplicationInfo().complete();
 
         if (complete.getTeam().getMemberById(context.getUser().getIdLong()) == null) {
-            context.send("Ta komenda jest dostępna tylko dla właściciela!");
-            return false;
+            context.sendTranslate("refresh.nonperm");
+            return;
         }
 
         context.send("Rozpoczynam sprawdzaenie!");
 
         OptionMapping id = context.getEvent().getOption("artistid");
-        if (id != null) {
-            spotifyService.check(id.getAsString());
-        } else {
-            spotifyService.check(null);
-        }
-        return true;
+
+        if (id != null) spotifyService.check(id.getAsString());
+        else spotifyService.check(null);
     }
 
 }

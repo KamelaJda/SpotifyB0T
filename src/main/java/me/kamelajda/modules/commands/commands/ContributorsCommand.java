@@ -55,11 +55,10 @@ public class ContributorsCommand extends ICommand {
         this.eventWaiter = eventWaiter;
         name = "contributors";
         category = CommandCategory.BASIC;
-        commandData = getData();
     }
 
     @Override
-    protected boolean execute(SlashContext context) {
+    protected void execute(SlashContext context) {
         context.getEvent().deferReply(true).queue();
         context.sendTranslate("global.generic.loading");
 
@@ -72,8 +71,6 @@ public class ContributorsCommand extends ICommand {
         }
 
         EmbedPaginator.create(pages, context.getUser(), eventWaiter, context.getHook());
-
-        return true;
     }
 
     private static EmbedBuilder embed(SlashContext context, JsonObject object) {

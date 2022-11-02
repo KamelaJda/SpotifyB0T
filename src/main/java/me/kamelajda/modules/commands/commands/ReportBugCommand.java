@@ -33,11 +33,10 @@ public class ReportBugCommand extends ICommand {
     public ReportBugCommand() {
         name = "reportbug";
         category = CommandCategory.BASIC;
-        commandData = getData();
     }
 
     @Override
-    protected boolean execute(SlashContext context) {
+    protected void execute(SlashContext context) {
         context.getEvent().deferReply(true).queue();
 
         EmbedBuilder eb = new EmbedBuilder();
@@ -47,7 +46,6 @@ public class ReportBugCommand extends ICommand {
         eb.setColor(UserUtil.getColor(context.getMember(), context.getShardManager()));
 
         context.send(eb.build());
-        return true;
     }
 
 }

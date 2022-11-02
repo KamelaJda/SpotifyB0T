@@ -37,5 +37,5 @@ public class UserConfig {
 
     @Id private Long userId;
 
-    @Builder.Default private LanguageType languageType = LanguageType.values()[0];
+    @Builder.Default private LanguageType languageType = null;
 }

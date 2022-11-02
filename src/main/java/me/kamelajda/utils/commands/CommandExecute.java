@@ -23,19 +23,15 @@ import com.google.common.eventbus.Subscribe;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.UserConfig;
-import me.kamelajda.modules.commands.commands.HelpCommand;
 import me.kamelajda.services.GuildConfigService;
 import me.kamelajda.services.UserConfigService;
-import me.kamelajda.utils.UsageException;
 import me.kamelajda.utils.events.CommandExecuteEvent;
 import me.kamelajda.utils.language.LanguageService;
-import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
+import me.kamelajda.utils.language.LanguageType;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -55,10 +51,16 @@ public class CommandExecute {
         Runnable run = () -> {
             Thread.currentThread().setName(e.getUser().getId() + "-" + e.getName() + "-" + channelId);
             ICommand c = commandManager.commands.get(e.getName());
-            if (c != null && c.getCommandData() != null) {
+            if (c != null) {
                 UserConfig userConfig = userConfigService.load(e.getUser().getIdLong());
+
+                if (userConfig.getLanguageType() == null && userConfig.getLanguageType().getDiscordLocale() != e.getUserLocale()) {
+                    userConfig.setLanguageType(LanguageType.fromDiscord(e.getUserLocale()));
+                    userConfigService.save(userConfig);
+                }
+
                 SlashContext context = new SlashContext(e, "/", c, userConfig,
-                    languageService.get(userConfig.getLanguageType()),
+                    languageService.get(LanguageType.fromDiscord(e.getUserLocale())),
                     e.isFromGuild() ? guildConfigService.load(e.getGuild().getIdLong()) : null);
 
                 if (c.isOnlyInGuild() && !e.isFromGuild()) {
@@ -67,18 +69,9 @@ public class CommandExecute {
                     return;
                 }
 
-                if (!c.getRequiredPermissions().isEmpty() && e.getMember() != null && !e.getMember().getPermissions().containsAll(c.getRequiredPermissions())) {
-                    e.deferReply(true).queue();
-                    e.getHook().sendMessage(context.getLanguage().get("global.command.not.permissions", c.getRequiredPermissions().stream().map(Permission::getName).collect(Collectors.joining(", ")))).queue();
-                    return;
-                }
-
                 try {
                     eventBus.post(new CommandExecuteEvent(context));
                     c.preExecute(context);
-                } catch (UsageException ex) {
-                    EmbedBuilder embed = e.isFromGuild() ? HelpCommand.embed(c, e.getMember(), context.getLanguage()) : HelpCommand.embed(c, context.getLanguage());
-                    context.getHook().sendMessageEmbeds(embed.build()).complete();
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     context.getHook().sendMessage(context.getLanguage().get("global.command.error")).complete();

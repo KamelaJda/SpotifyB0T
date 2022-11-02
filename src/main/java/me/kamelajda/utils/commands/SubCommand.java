@@ -28,5 +28,6 @@ import java.lang.annotation.Target;
 public @interface SubCommand {
 
     String name() default "";
+    String usage() default "";
 
 }
