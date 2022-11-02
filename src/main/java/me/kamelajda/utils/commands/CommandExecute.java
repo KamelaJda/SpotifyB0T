@@ -23,14 +23,11 @@ import com.google.common.eventbus.Subscribe;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.kamelajda.jpa.models.UserConfig;
-import me.kamelajda.modules.commands.commands.HelpCommand;
 import me.kamelajda.services.GuildConfigService;
 import me.kamelajda.services.UserConfigService;
-import me.kamelajda.utils.UsageException;
 import me.kamelajda.utils.events.CommandExecuteEvent;
 import me.kamelajda.utils.language.LanguageService;
 import me.kamelajda.utils.language.LanguageType;
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 import java.util.concurrent.ExecutorService;
@@ -75,9 +72,6 @@ public class CommandExecute {
                 try {
                     eventBus.post(new CommandExecuteEvent(context));
                     c.preExecute(context);
-                } catch (UsageException ex) {
-                    EmbedBuilder embed = e.isFromGuild() ? HelpCommand.embed(c, e.getMember(), context.getLanguage()) : HelpCommand.embed(c, context.getLanguage());
-                    context.getHook().sendMessageEmbeds(embed.build()).complete();
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     context.getHook().sendMessage(context.getLanguage().get("global.command.error")).complete();

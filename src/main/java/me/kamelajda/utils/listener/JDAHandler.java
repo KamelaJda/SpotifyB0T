@@ -27,8 +27,8 @@ import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.internal.JDAImpl;
 import net.dv8tion.jda.internal.handle.PresenceUpdateHandler;
 import net.dv8tion.jda.internal.handle.SocketHandler;
+import org.springframework.lang.NonNull;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 
 @AllArgsConstructor
@@ -37,7 +37,7 @@ public class JDAHandler implements EventListener {
     private final EventBus eventBus;
 
     @Override
-    public void onEvent(@Nonnull GenericEvent event) {
+    public void onEvent(@NonNull GenericEvent event) {
         if (event instanceof ReadyEvent) {
             Map<String, SocketHandler> handlers = ((JDAImpl) event.getJDA()).getClient().getHandlers();
             handlers.put("PRESENCE_UPDATE", new PresenceUpdateHandler((JDAImpl) event.getJDA()));
