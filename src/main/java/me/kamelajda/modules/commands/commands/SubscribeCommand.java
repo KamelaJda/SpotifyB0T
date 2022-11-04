@@ -75,7 +75,7 @@ public class SubscribeCommand extends ICommand {
         category = CommandCategory.BASIC;
     }
 
-    @SubCommand(name = "add", usage = "[artist:string]")
+    @SubCommand(name = "add", usage = "<artist:string>")
     public void add(SlashContext context) {
         context.getEvent().deferReply(true).queue();
         String artist = Objects.requireNonNull(context.getEvent().getOption("artist")).getAsString();

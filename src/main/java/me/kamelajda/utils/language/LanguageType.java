@@ -37,7 +37,6 @@ public enum LanguageType {
     private final ZoneId timeZone;
     private final CountryCode countryCode;
     private final DiscordLocale discordLocale;
-
     public static LanguageType fromDiscord(DiscordLocale userLocale) {
         for (LanguageType value : values()) {
             if (value.getDiscordLocale() == userLocale) return value;
