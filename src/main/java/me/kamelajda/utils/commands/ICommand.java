@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2022 SpotifyB0T
+ * Copyright 2023 SpotifyB0T
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -121,7 +121,7 @@ public abstract class ICommand {
 
         for (String arg : arguments) {
             boolean required = arg.startsWith("<") && arg.endsWith(">");
-            if (!required && !arg.startsWith("[") || !arg.endsWith("]"))
+            if (!required && !arg.startsWith("[") && !arg.endsWith("]"))
                 throw new IllegalStateException("Invalid argument " + arg);
 
             String[] argData = arg.substring(1, arg.length() - 1).split(":");

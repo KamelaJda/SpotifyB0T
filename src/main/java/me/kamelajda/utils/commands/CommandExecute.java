@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2022 SpotifyB0T
+ * Copyright 2023 SpotifyB0T
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ public class CommandExecute {
             if (c != null) {
                 UserConfig userConfig = userConfigService.load(e.getUser().getIdLong());
 
-                if (userConfig.getLanguageType() == null && userConfig.getLanguageType().getDiscordLocale() != e.getUserLocale()) {
+                if (userConfig.getLanguageType() == null || userConfig.getLanguageType().getDiscordLocale() != e.getUserLocale()) {
                     userConfig.setLanguageType(LanguageType.fromDiscord(e.getUserLocale()));
                     userConfigService.save(userConfig);
                 }
