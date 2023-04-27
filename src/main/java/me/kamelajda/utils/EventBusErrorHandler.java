@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2022 SpotifyB0T
+ * Copyright 2023 SpotifyB0T
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ package me.kamelajda.utils;
 
 import com.google.common.eventbus.SubscriberExceptionContext;
 import com.google.common.eventbus.SubscriberExceptionHandler;
-import com.sun.istack.NotNull;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
@@ -31,7 +31,7 @@ public class EventBusErrorHandler implements SubscriberExceptionHandler {
     public static final EventBusErrorHandler instance = new EventBusErrorHandler();
 
     @Override
-    public void handleException(@NotNull Throwable exception, @NotNull SubscriberExceptionContext context) {
+    public void handleException(@NonNull Throwable exception, @NonNull SubscriberExceptionContext context) {
         log.error(message(context), exception);
     }
 

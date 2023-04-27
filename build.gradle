@@ -7,6 +7,7 @@ plugins {
 
 group 'me.kamelajda'
 version '1.0.0'
+sourceCompatibility = '17'
 
 repositories {
     mavenCentral()
@@ -21,7 +22,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-
+    implementation 'org.hibernate:hibernate-entitymanager:5.6.15.Final'
+    implementation 'org.hibernate:hibernate-core:6.1.7.Final'
     implementation 'javax.xml.bind:jaxb-api:2.4.0-b180830.0359'
     implementation 'net.dv8tion:JDA:5.0.0-alpha.22'
     implementation 'org.projectlombok:lombok:1.18.26'
